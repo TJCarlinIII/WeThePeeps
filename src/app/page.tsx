@@ -1,65 +1,42 @@
-import Image from "next/image";
+// src/app/page.tsx
+// ─────────────────────────────────────────────────────────────────────────────
+// Server Component: fetch data here, pass it to the client SiteLayout.
+//
+// TO CONNECT TO D1 (Cloudflare Database):
+//   const db = process.env.DB as D1Database;
+//   const { results } = await db
+//     .prepare("SELECT * FROM evidence_records WHERE is_public = 1 ORDER BY created_at DESC")
+//     .all<EvidenceRecord>();
+//   Then pass: <SiteLayout evidenceData={results} />
+// ─────────────────────────────────────────────────────────────────────────────
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+import { SiteLayout } from "@/components/site-layout";
+import type { EvidenceRecord } from "@/components/evidence-card";
+
+// Mock data — replace with a D1 query once your database is ready
+const evidenceData: EvidenceRecord[] = [
+  {
+    id: 1,
+    title: "Township Meeting Minutes — Q1 2026",
+    category: "PUBLIC RECORD",
+    description:
+      "Official transcription of the Redford Township board meeting regarding infrastructure allocation. Multiple procedural violations of the Michigan Open Meetings Act identified.",
+    r2_key: "foia-001",
+    is_public: 1,
+    created_at: "2026-03-15T12:00:00Z",
+  },
+  {
+    id: 2,
+    title: "Property Tax Assessment Audit",
+    category: "FINANCIAL RECORD",
+    description:
+      "Awaiting response from the County Assessor's office regarding valuation discrepancies. FOIA request submitted 2026-02-28. Response overdue by 14 days.",
+    r2_key: "foia-002",
+    is_public: 1,
+    created_at: "2026-03-10T12:00:00Z",
+  },
+];
+
+export default function EvidenceFeed() {
+  return <SiteLayout evidenceData={evidenceData} />;
 }
