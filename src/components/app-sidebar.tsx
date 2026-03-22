@@ -64,26 +64,22 @@ export function AppSidebar({ activeOrgId, onOrgSelect }: AppSidebarProps) {
     >
      <SidebarHeader className="p-4 border-b border-white/5">
       <div className="flex items-center justify-between w-full">
-        {/* NEW LOGO SECTION */}
         <div className="flex items-center gap-3">
-          <div className="relative h-10 w-auto overflow-hidden rounded-sm">
-            <img 
-              src="/WTPLogo.jpg" 
-              alt="We The Peeps Logo" 
-              className="h-full w-auto object-contain"
-            />
-          </div>
-          {/* Optional: Add a subtle 'Active' tag next to your logo */}
+          {/* GitHub-Hosted Logo */}
+          <img 
+            src="https://raw.githubusercontent.com/TJCarlinIII/WeThePeeps/main/public/WTPLogo.png" 
+            alt="We The Peeps Logo" 
+            className="h-9 w-auto object-contain"
+          />
           <div className="flex flex-col">
             <span className="font-mono text-[8px] text-[#4A90E2] uppercase tracking-[0.2em] leading-none mb-1">
-              Terminal
+              Secure Terminal
             </span>
-            <span className="font-mono text-[9px] text-white/40 uppercase tracking-tighter leading-none">
-              v1.0.2
+            <span className="font-mono text-[9px] text-white/30 uppercase tracking-tighter leading-none">
+              Auth_Verified
             </span>
           </div>
         </div>
-        
         <SidebarTrigger className="text-slate-500 hover:text-white" />
       </div>
     </SidebarHeader>
