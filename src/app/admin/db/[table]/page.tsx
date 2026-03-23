@@ -1,12 +1,14 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 // Fix: Ensure this path matches your folder structure exactly 
 // (e.g., src/components/admin/DynamicTableForm.tsx)
 import DynamicIngressForm from '@/components/admin/DynamicTableForm';
 
+// Fix: params must be typed as a Promise in Next.js 15
 interface TablePageProps {
-  params: { table: string };
+  params: Promise<{ table: string }>;
 }
 
 // Define a generic type for our database rows to avoid 'any'
@@ -19,7 +21,11 @@ interface DbRow {
   [key: string]: unknown;
 }
 
-export default function TableManager({ params }: TablePageProps) {
+export default function TableManager(props: TablePageProps) {
+  // Fix: Unwrap the async params using React.use()
+  const params = use(props.params);
+  const tableName = params.table;
+
   // --- STATE ---
   const [rows, setRows] = useState<DbRow[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -33,7 +39,7 @@ export default function TableManager({ params }: TablePageProps) {
   useEffect(() => {
     const fetchRows = async () => {
       try {
-        const response = await fetch(`/api/db/${params.table}`);
+        const response = await fetch(`/api/db/${tableName}`);
         const data = await response.json();
         if (Array.isArray(data)) setRows(data);
       } catch (err) {
@@ -41,7 +47,7 @@ export default function TableManager({ params }: TablePageProps) {
       }
     };
     fetchRows();
-  }, [params.table]);
+  }, [tableName]);
 
   // --- LOGIC FUNCTIONS ---
 
@@ -50,7 +56,7 @@ export default function TableManager({ params }: TablePageProps) {
     if (!confirm("CRITICAL_WARNING: Permanently purge this record?")) return;
 
     try {
-      const res = await fetch(`/api/db/${params.table}`, {
+      const res = await fetch(`/api/db/${tableName}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: selectedId })
@@ -82,7 +88,7 @@ export default function TableManager({ params }: TablePageProps) {
     const payload = isEditing ? { ...formData, id: selectedId } : formData;
 
     try {
-      const res = await fetch(`/api/db/${params.table}`, {
+      const res = await fetch(`/api/db/${tableName}`, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -110,11 +116,12 @@ export default function TableManager({ params }: TablePageProps) {
       
       <section className="border border-[#4A90E2]/30 p-6 bg-slate-900/10 rounded-lg">
         <h3 className="text-[#4A90E2] text-xs font-bold mb-6 uppercase tracking-[0.2em]">
-          {isEditing ? `UPDATE_ENTRY_ID:${selectedId}` : `NEW_${params.table.toUpperCase()}_ENTRY`}
+          {isEditing ? `UPDATE_ENTRY_ID:${selectedId}` : `NEW_${tableName.toUpperCase()}_ENTRY`}
         </h3>
         
         <DynamicIngressForm 
-          tableName={params.table} 
+          key={isEditing ? `edit-${selectedId}` : 'new-entry'} // Forces a reset when switching modes
+          tableName={tableName} 
           onSave={handleSave} 
           initialData={isEditing ? selectedRow : null} 
         />
@@ -186,7 +193,7 @@ export default function TableManager({ params }: TablePageProps) {
         
         {rows.length === 0 && (
           <p className="text-center text-slate-700 py-10 uppercase text-[10px] tracking-[0.5em]">
-            No_Records_Found_In_{params.table.toUpperCase()}
+            No_Records_Found_In_{tableName.toUpperCase()}
           </p>
         )}
       </section>
