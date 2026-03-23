@@ -68,11 +68,13 @@ export default function AdminEvidencePage() {
 
       if (response.ok) {
         setStatus({ type: 'success', msg: 'CORE_DATA_COMMITTED' });
+        // Reset the form but keep the organizationId for faster bulk entry
         setFormData(prev => ({ 
           ...prev, 
           title: '', 
           content: '', 
-          statute: '' 
+          statute: '',
+          isCritical: false // Resetting this prevents accidental double-flagging
         }));
       } else {
         throw new Error(result.error || 'Database rejection');
@@ -129,7 +131,7 @@ export default function AdminEvidencePage() {
         <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-[10px] text-[#4A90E2] font-bold uppercase mb-2 tracking-widest text-slate-500">Affiliated Organization</label>
+              <label className="block text-[10px] text-[#4A90E2] font-bold uppercase mb-2 tracking-widest">Affiliated Organization</label>
               <select 
                 className="w-full bg-black border border-slate-700 p-3 text-sm focus:border-[#4A90E2] outline-none transition-colors appearance-none"
                 value={formData.organizationId}
@@ -143,7 +145,7 @@ export default function AdminEvidencePage() {
               </select>
             </div>
             <div>
-              <label className="block text-[10px] text-[#4A90E2] font-bold uppercase mb-2 tracking-widest text-slate-500">Subject Name</label>
+              <label className="block text-[10px] text-[#4A90E2] font-bold uppercase mb-2 tracking-widest">Subject Name</label>
               <input 
                 type="text" 
                 placeholder="e.g. Jennifer Mansfield" 
@@ -156,7 +158,7 @@ export default function AdminEvidencePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-[10px] text-[#4A90E2] font-bold uppercase mb-2 tracking-widest text-slate-500">Statute (MCL)</label>
+              <label className="block text-[10px] text-[#4A90E2] font-bold uppercase mb-2 tracking-widest">Statute (MCL)</label>
               <input 
                 type="text" 
                 placeholder="MCL 15.231" 
@@ -166,7 +168,7 @@ export default function AdminEvidencePage() {
               />
             </div>
             <div>
-              <label className="block text-[10px] text-[#4A90E2] font-bold uppercase mb-2 tracking-widest text-slate-500">Evidence Title</label>
+              <label className="block text-[10px] text-[#4A90E2] font-bold uppercase mb-2 tracking-widest">Evidence Title</label>
               <input 
                 type="text" 
                 placeholder="Ex: Records_Withheld_FOIA" 
@@ -178,7 +180,7 @@ export default function AdminEvidencePage() {
           </div>
 
           <div>
-            <label className="block text-[10px] text-[#4A90E2] font-bold uppercase mb-2 tracking-widest text-slate-500">Evidence_Manifest (Markdown)</label>
+            <label className="block text-[10px] text-[#4A90E2] font-bold uppercase mb-2 tracking-widest">Evidence_Manifest (Markdown)</label>
             <textarea 
               rows={12}
               placeholder="Enter documented findings here..."

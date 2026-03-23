@@ -32,16 +32,15 @@ export const metadata = {
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
-    <html
-      lang="en"
-      className={`dark ${libreBaskerville.variable} ${lora.variable} ${mono.variable}`}
-    >
-      <body className="bg-[#0B0E14] text-foreground antialiased font-sans">
+    // Adding 'dark' here forces Tailwind's dark mode variables
+    // style={{ colorScheme: 'dark' }} tells the browser to use dark scrollbars/inputs
+    <html lang="en" className="dark" style={{ colorScheme: 'dark' }}>
+      <body className="bg-black antialiased">
         {children}
       </body>
     </html>
-  );
+  )
 }

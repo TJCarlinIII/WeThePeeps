@@ -101,3 +101,10 @@ export interface Profile {
   title: string;
   officer_name: string; // matches what src/lib/actions.ts is expecting
 }
+
+export async function getHierarchy() {
+  const { results } = await process.env.DB.prepare(
+    "SELECT name, branch, department FROM official_profiles ORDER BY branch DESC, rank_order ASC"
+  ).all();
+  return results;
+}

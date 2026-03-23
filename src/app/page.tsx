@@ -1,4 +1,5 @@
 // src/app/page.tsx
+import Logo from '@/components/ui/logo';
 import Link from 'next/link';
 
 export default function LandingPage() {
@@ -7,54 +8,68 @@ export default function LandingPage() {
       {/* Background Decorative Grid */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
 
-      <main className="relative z-10 max-w-4xl w-full text-center">
-        <header className="mb-16 flex flex-col items-center">
-        <div className="inline-block border border-[#4A90E2] px-3 py-1 text-[10px] font-bold text-[#4A90E2] tracking-[0.3em] uppercase mb-4 animate-pulse">
-          System Status: Operational
+      <main className="relative z-10 max-w-5xl w-full text-center flex flex-col items-center">
+        
+        {/* TOP HOOK */}
+        <div className="mb-12 space-y-4">
+          <h1 className="text-3xl md:text-5xl font-black text-white uppercase italic tracking-tighter leading-tight">
+            &ldquo;It began with a medical emergency.&rdquo;
+          </h1>
+          <h2 className="text-xl md:text-2xl font-bold text-red-600 uppercase tracking-widest">
+            Ended in extreme violence.
+          </h2>
         </div>
 
-        {/* THE MASKED TITLE */}
-        <h1 
-          className="text-5xl md:text-8xl font-black tracking-tighter uppercase bg-cover bg-center bg-no-repeat leading-none"
-          style={{ 
-            backgroundImage: 'url(/american-flag.jpg)',
-            WebkitBackgroundClip: 'text',
-            backgroundClip: 'text',
-            color: 'transparent'
-          }}
-        >
-          We The Peeps
-        </h1>
-
-        {/* THE SUBTITLE */}
-        <p className="italic mt-2 text-[20px] md:text-[20px] font-bold tracking-[0.4em] text-[#C4A77D] uppercase border-b border-slate-800 pb-4 mb-6 leading-none">
-          Shall not be infringed...
-        </p>
-
-        <p className="text-sm md:text-base text-slate-500 max-w-2xl mx-auto leading-relaxed uppercase tracking-widest">
-          A decentralized ledger of official accountability. 
-          <br />Transparency is the only prerequisite for trust.
-        </p>
-      </header>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-          {/* Public Search Entry (Removed underscores) */}
-          <Link href="/evidence" className="group relative p-8 border border-slate-800 bg-slate-900/20 hover:border-[#4A90E2] transition-all overflow-hidden">
-            <div className="absolute top-0 right-0 p-2 text-[8px] text-slate-700 group-hover:text-[#4A90E2]">SECTOR_01</div>
-            <h2 className="text-xl font-bold text-white uppercase group-hover:text-[#4A90E2] transition-colors">Archive Access</h2>
-            <p className="text-[10px] mt-2 text-slate-500 uppercase tracking-tighter">Search public records and FOIA data.</p>
-          </Link>
-
-          {/* Admin/Ingress Entry (Removed underscores) */}
-          <Link href="/admin/add-evidence" className="group relative p-8 border border-slate-800 bg-slate-900/20 hover:border-red-900/50 transition-all overflow-hidden">
-            <div className="absolute top-0 right-0 p-2 text-[8px] text-slate-700 group-hover:text-red-500">AUTH_REQ</div>
-            <h2 className="text-xl font-bold text-white uppercase group-hover:text-red-500 transition-colors">Evidence Submission</h2>
-            <p className="text-[10px] mt-2 text-slate-500 uppercase tracking-tighter">Official document ingress (Requires Auth).</p>
-          </Link>
+        {/* LOGO & CONSTITUTIONAL BADGE */}
+        <div className="flex flex-col items-center my-10 space-y-6">
+          <Logo size="text-6xl md:text-9xl" />
+          <div className="border-y border-red-900 py-2 px-8">
+            <span className="text-white text-xs md:text-sm font-black tracking-[0.6em] uppercase">
+              Shall Not Be Infringed
+            </span>
+          </div>
         </div>
 
-        <footer className="mt-20 text-[9px] text-slate-700 tracking-[0.5em] uppercase">
-          Detroit Region // Redford MI // Est 2026
+        {/* THE AR-15 STATEMENT */}
+        <p className="max-w-2xl text-slate-400 text-sm md:text-lg uppercase tracking-tight leading-relaxed mb-16">
+          How begging for emergency medical help can lead to an 
+          <span className="text-white font-black underline decoration-red-600 mx-1">AR-15 in your face</span> 
+          in Michigan.
+        </p>
+
+        {/* SEO ENTITY GRID: 9-Button Layout (3x3) */}
+        <div className="w-full grid grid-cols-2 md:grid-cols-3 gap-4 mb-20">
+          {[
+            { name: "Irvin Gastman", slug: "gastman" },
+            { name: "Corewell Health", slug: "corewell" },
+            { name: "Henry Ford", slug: "henry-ford" },
+            { name: "Priority Health", slug: "priority-health" },
+            { name: "Tandem 365", slug: "tandem" },
+            { name: "Redford Township", slug: "redford-township" },
+            { name: "Dana Nessel", slug: "nessel" },
+            { name: "LARA", slug: "lara" },
+            { name: "MDHHS / APS", slug: "mdhhs-aps" }
+          ].map((entity) => (
+            <Link 
+              key={entity.slug}
+              href={`/manifest#${entity.slug}`}
+              className="bg-slate-950/60 border border-slate-800 py-6 px-4 hover:border-[#C4A77D] hover:bg-[#C4A77D]/10 transition-all group flex items-center justify-center"
+            >
+              <span className="text-xs md:text-sm text-[#C4A77D] font-black tracking-[0.2em] uppercase group-hover:text-white transition-colors text-center">
+                {entity.name}
+              </span>
+            </Link>
+          ))}
+        </div>
+
+        {/* FOOTER */}
+        <footer className="w-full pt-8 border-t border-slate-900/50 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-[9px] text-slate-700 tracking-[0.4em] uppercase">
+            Digital Chain of Custody // Case: 2022-11-22-GASTMAN-IRVIN
+          </p>
+          <Link href="/manifest" className="text-red-900 hover:text-red-500 text-[10px] font-black tracking-widest uppercase transition-colors">
+            Initialize Access &rarr;
+          </Link>
         </footer>
       </main>
     </div>
