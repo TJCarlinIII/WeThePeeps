@@ -1,7 +1,7 @@
 export const TABLE_SCHEMAS = {
   entities: [
     { name: 'name', label: 'Organization Name', type: 'text', placeholder: 'e.g. Redford Township' },
-    { name: 'org_type', label: 'Sector', type: 'select', options: ['Medical', 'Government', 'Legal', 'Utility'] },
+    { name: 'sector_id', label: 'Sector', type: 'relation', table: 'sectors' },
     { name: 'description', label: 'Entity Summary', type: 'textarea' },
     { name: 'slug', label: 'URL Slug', type: 'text', placeholder: 'redford-township' }
   ],

@@ -19,7 +19,7 @@ import {
   ChevronUp,
   AlertOctagon,
 } from "lucide-react";
-import { laws, getLawsByCategory, type LawReference } from "@/data/organizations";
+import { getLawsByCategory, type LawReference } from "@/data/organizations";
 import { cn } from "@/lib/utils";
 
 type DrawerType = "constitutional" | "federal" | "state" | "regulation" | null;
@@ -75,10 +75,10 @@ const categoryTitles: Record<NonNullable<DrawerType>, string> = {
 
 function LawCard({ law }: { law: LawReference }) {
   return (
-    <div className="p-4 border border-white/8 bg-white/[0.02] hover:bg-white/[0.04] transition-all rounded-sm group">
+    <div className="p-4 border border-slate-800 bg-black hover:bg-slate-900 transition-all rounded-none group">
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex items-center gap-2">
-          <AlertOctagon className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" />
+          <AlertOctagon className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
           <span className="font-mono text-[10px] text-[#4A90E2] uppercase tracking-widest font-bold">
             {law.citation}
           </span>
@@ -92,7 +92,7 @@ function LawCard({ law }: { law: LawReference }) {
         {law.description}
       </p>
       {law.penalty && (
-        <div className="mt-3 px-3 py-2 bg-red-500/5 border border-red-500/15 rounded-sm">
+        <div className="mt-3 px-3 py-2 bg-red-950/20 border border-red-900/40 rounded-none">
           <p className="font-mono text-[9px] text-red-400 uppercase tracking-wider font-bold mb-0.5">
             Penalty / Enforcement
           </p>
@@ -107,23 +107,19 @@ function LawCard({ law }: { law: LawReference }) {
 
 export function LegalDrawerBar() {
   const [openDrawer, setOpenDrawer] = React.useState<DrawerType>(null);
-
   const activeLaws = openDrawer ? getLawsByCategory(openDrawer) : [];
 
   return (
     <>
-      {/* ── Fixed Bottom Toolbar ─────────────────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#080B10]/95 backdrop-blur-sm border-t border-white/8">
-        <div className="max-w-full px-4 py-2 flex items-center gap-2 overflow-x-auto">
-          {/* Label */}
-          <div className="flex items-center gap-2 pr-4 border-r border-white/8 flex-shrink-0">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-md border-t border-slate-800">
+        <div className="max-w-full px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-2 pr-4 border-r border-slate-800 flex-shrink-0">
             <Scale className="w-3.5 h-3.5 text-[#4A90E2]" />
             <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-slate-500">
               Legal Index
             </span>
           </div>
 
-          {/* Drawer trigger buttons */}
           {drawerButtons.map((btn) => {
             const Icon = btn.icon;
             return (
@@ -131,7 +127,7 @@ export function LegalDrawerBar() {
                 key={btn.id}
                 onClick={() => setOpenDrawer(btn.id)}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 border rounded-sm transition-all cursor-pointer flex-shrink-0",
+                  "flex items-center gap-2 px-3 py-1.5 border rounded-none transition-all cursor-pointer flex-shrink-0",
                   btn.color
                 )}
               >
@@ -146,64 +142,42 @@ export function LegalDrawerBar() {
               </button>
             );
           })}
-
-          {/* Total count badge */}
-          <div className="ml-auto flex-shrink-0 flex items-center gap-1.5 text-slate-600">
-            <span className="font-mono text-[9px] uppercase tracking-widest">
-              {laws.length} total citations
-            </span>
-          </div>
         </div>
       </div>
 
-      {/* ── Law Drawers ──────────────────────────────────────── */}
       <Drawer
         open={openDrawer !== null}
         onOpenChange={(open) => !open && setOpenDrawer(null)}
-        direction="bottom"
       >
-        <DrawerContent className="bg-[#0B0E14] border-t border-white/10 max-h-[70vh]">
-          {/* Drag handle */}
-          <div className="mx-auto mt-3 w-12 h-1 rounded-full bg-white/10 flex-shrink-0" />
+        <DrawerContent className="bg-[#0B0E14] border-t border-slate-800 max-h-[75vh] rounded-none">
+          <div className="mx-auto mt-3 w-12 h-1 bg-slate-800 flex-shrink-0" />
 
-          <DrawerHeader className="px-6 py-4 border-b border-white/8 flex flex-row items-start justify-between">
+          <DrawerHeader className="px-6 py-4 border-b border-slate-900 flex flex-row items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#4A90E2]/10 border border-[#4A90E2]/20 rounded-sm">
+              <div className="p-2 bg-[#4A90E2]/10 border border-[#4A90E2]/20">
                 <Scale className="w-4 h-4 text-[#4A90E2]" />
               </div>
               <div>
-                <DrawerTitle className="font-heading text-base font-bold text-white">
+                <DrawerTitle className="font-heading text-base font-bold text-white uppercase tracking-tight">
                   {openDrawer ? categoryTitles[openDrawer] : ""}
                 </DrawerTitle>
                 <DrawerDescription className="font-mono text-[9px] uppercase tracking-[0.2em] text-slate-500 mt-0.5">
-                  {activeLaws.length} citation{activeLaws.length !== 1 ? "s" : ""} on record // Public Interest Archive
+                  {activeLaws.length} CITATION{activeLaws.length !== 1 ? "S" : ""} ON RECORD // PUBLIC INTEREST ARCHIVE
                 </DrawerDescription>
               </div>
             </div>
             <DrawerClose asChild>
-              <button className="p-1.5 border border-white/10 rounded-sm text-slate-500 hover:text-white hover:border-white/20 transition-all ml-4 mt-0.5">
+              <button className="p-1.5 border border-slate-800 text-slate-500 hover:text-white hover:border-[#4A90E2] transition-all">
                 <X className="w-3.5 h-3.5" />
               </button>
             </DrawerClose>
           </DrawerHeader>
 
-          {/* Scrollable law cards */}
-          <div className="overflow-y-auto px-6 py-4 pb-20">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-w-6xl">
+          <div className="overflow-y-auto px-6 py-6 pb-24">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto">
               {activeLaws.map((law) => (
                 <LawCard key={law.id} law={law} />
               ))}
-            </div>
-
-            {/* Disclaimer */}
-            <div className="mt-6 p-4 border border-white/5 bg-white/[0.015] rounded-sm">
-              <p className="font-sans text-[10px] text-slate-600 leading-relaxed italic">
-                <strong className="text-slate-500 not-italic font-heading">Legal Notice:</strong>{" "}
-                The legal citations listed above are provided for public interest and
-                accountability journalism purposes. This archive does not constitute legal
-                advice. Consult a licensed attorney regarding your specific circumstances.
-                All allegations are based on documented evidence and public record.
-              </p>
             </div>
           </div>
         </DrawerContent>

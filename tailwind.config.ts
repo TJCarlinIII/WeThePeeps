@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindAnimate from "tailwindcss-animate"; // Move the import here
 
 const config: Config = {
   darkMode: ["class"],
@@ -17,23 +18,19 @@ const config: Config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         accent: {
-          DEFAULT: "#4A90E2",
+          DEFAULT: "#4A90E2", // Your high-tech blue hex
           foreground: "hsl(var(--accent-foreground))",
         },
       },
       fontFamily: {
-        // Lora — elegant serif for body text and descriptions
         sans: ["var(--font-sans)", "Georgia", "serif"],
-        // Libre Baskerville — authoritative serif for headings and titles
         heading: ["var(--font-heading)", "Georgia", "serif"],
-        // Keep "brand" mapped to heading for backward compat
         brand: ["var(--font-heading)", "Georgia", "serif"],
-        // JetBrains Mono — technical labels, dates, codes
         mono: ["var(--font-mono)", "Consolas", "monospace"],
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindAnimate], // Use the imported variable here
 };
 
 export default config;

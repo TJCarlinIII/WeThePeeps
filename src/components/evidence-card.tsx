@@ -1,5 +1,6 @@
 "use client";
 
+import React from 'react';
 import { Calendar, ChevronRight, Lock, Unlock } from "lucide-react";
 
 export interface EvidenceRecord {
@@ -20,49 +21,47 @@ export function EvidenceCard({ record }: { record: EvidenceRecord }) {
   });
 
   return (
-    <div className="bg-[#0D1117] border border-white/5 hover:border-[#4A90E2]/30 transition-all group overflow-hidden p-6 rounded-sm">
-      {/* Top row: category badge + date */}
-      <div className="flex justify-between items-start mb-4">
-        <span className="px-2 py-1 bg-[#4A90E2]/10 border border-[#4A90E2]/20 text-[#4A90E2] text-[9px] font-mono font-bold uppercase tracking-wider">
+    <div className="bg-black border border-slate-900 hover:border-[#4A90E2]/40 transition-all group overflow-hidden p-8 rounded-sm relative">
+      {/* Visual Corner Accent */}
+      <div className="absolute top-0 right-0 w-6 h-6 border-t border-r border-slate-900 group-hover:border-[#4A90E2] transition-colors" />
+
+      <div className="flex justify-between items-start mb-6">
+        <span className="px-2 py-1 bg-[#4A90E2]/5 border border-[#4A90E2]/20 text-[#4A90E2] text-[8px] font-mono font-black uppercase tracking-[0.2em]">
           {record.category}
         </span>
         <div className="flex items-center gap-4">
-          {/* Public/Private indicator */}
-          <div className="flex items-center gap-1.5 text-slate-600">
+          <div className="flex items-center gap-1.5">
             {record.is_public ? (
-              <Unlock className="w-2.5 h-2.5 text-green-500/70" />
+              <Unlock className="w-2.5 h-2.5 text-green-500" />
             ) : (
-              <Lock className="w-2.5 h-2.5 text-red-500/70" />
+              <Lock className="w-2.5 h-2.5 text-red-500" />
             )}
-            <span className="font-mono text-[8px] uppercase tracking-widest">
+            <span className="font-mono text-[8px] uppercase tracking-widest text-slate-600">
               {record.is_public ? "Public" : "Restricted"}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-slate-500 font-mono text-[10px]">
+          <div className="flex items-center gap-1.5 text-slate-700 font-mono text-[9px] uppercase font-bold">
             <Calendar className="w-3 h-3" />
             {date}
           </div>
         </div>
       </div>
 
-      {/* Title: Libre Baskerville */}
-      <h3 className="font-heading text-lg font-bold text-white group-hover:text-[#4A90E2] transition-colors mb-3 leading-snug">
+      <h3 className="text-xl font-black text-white group-hover:text-[#4A90E2] transition-colors mb-3 uppercase italic tracking-tighter">
         {record.title}
       </h3>
 
-      {/* Description: Lora serif body text */}
-      <p className="font-sans text-sm text-slate-400 leading-relaxed italic mb-5">
+      <p className="font-sans text-sm text-slate-500 leading-relaxed italic mb-8">
         &ldquo;{record.description}&rdquo;
       </p>
 
-      {/* Bottom: Access Record link */}
-      <div className="flex items-center justify-between">
-        <button className="flex items-center gap-2 text-[#4A90E2] font-mono text-[10px] uppercase font-bold cursor-pointer hover:underline underline-offset-4 transition-all group/link">
-          Access Full Record{" "}
-          <ChevronRight className="w-3 h-3 group-hover/link:translate-x-0.5 transition-transform" />
+      <div className="flex items-center justify-between border-t border-slate-900 pt-6">
+        <button className="flex items-center gap-2 text-[#4A90E2] font-mono text-[10px] uppercase font-black cursor-pointer group/link italic">
+          Access_Full_Record
+          <ChevronRight className="w-3 h-3 group-hover/link:translate-x-1 transition-transform" />
         </button>
-        <span className="font-mono text-[8px] text-slate-700 uppercase tracking-widest">
-          REF: {record.r2_key}
+        <span className="font-mono text-[8px] text-slate-800 uppercase tracking-widest font-black">
+          REF_KEY: {record.r2_key}
         </span>
       </div>
     </div>

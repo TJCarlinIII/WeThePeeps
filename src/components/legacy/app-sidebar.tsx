@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image"; // 1. Import the Next.js Image component
 import {
   Sidebar,
   SidebarContent,
@@ -42,7 +43,6 @@ const iconMap: Record<string, React.ElementType> = {
 interface AppSidebarProps {
   activeOrgId: string;
   onOrgSelect: (id: string) => void;
-  // (Removed open and onOpenChange lines)
 }
 
 function groupByCategory(orgs: Organization[]) {
@@ -62,27 +62,32 @@ export function AppSidebar({ activeOrgId, onOrgSelect }: AppSidebarProps) {
       collapsible="offcanvas"
       className="border-r border-white/5 bg-[#0B0E14]"
     >
-     <SidebarHeader className="p-4 border-b border-white/5">
-      <div className="flex items-center justify-between w-full">
-        <div className="flex items-center gap-3">
-          {/* GitHub-Hosted Logo */}
-          <img 
-            src="https://raw.githubusercontent.com/TJCarlinIII/WeThePeeps/main/public/WTPLogo.png" 
-            alt="We The Peeps Logo" 
-            className="h-9 w-auto object-contain"
-          />
-          <div className="flex flex-col">
-            <span className="font-mono text-[8px] text-[#4A90E2] uppercase tracking-[0.2em] leading-none mb-1">
-              Secure Terminal
-            </span>
-            <span className="font-mono text-[9px] text-white/30 uppercase tracking-tighter leading-none">
-              Auth_Verified
-            </span>
+      <SidebarHeader className="p-4 border-b border-white/5">
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-3">
+            {/* 2. Replaced <img> with <Image /> */}
+            <div className="relative h-9 w-9">
+              <Image 
+                src="https://raw.githubusercontent.com/TJCarlinIII/WeThePeeps/main/public/WTPLogo.png" 
+                alt="We The Peeps Logo" 
+                fill
+                sizes="36px"
+                priority // Ensures the logo loads immediately for LCP
+                className="object-contain"
+              />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-mono text-[8px] text-[#4A90E2] uppercase tracking-[0.2em] leading-none mb-1">
+                Secure Terminal
+              </span>
+              <span className="font-mono text-[9px] text-white/30 uppercase tracking-tighter leading-none">
+                Auth_Verified
+              </span>
+            </div>
           </div>
+          <SidebarTrigger className="text-slate-500 hover:text-white" />
         </div>
-        <SidebarTrigger className="text-slate-500 hover:text-white" />
-      </div>
-    </SidebarHeader>
+      </SidebarHeader>
 
       <SidebarContent className="p-3 pt-4 overflow-y-auto">
         {Object.entries(grouped).map(([category, orgs]) => (

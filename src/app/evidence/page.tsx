@@ -12,24 +12,28 @@ export const metadata = {
 export default async function EvidenceDirectoryPage() {
   const result = await getEvidenceRecords();
   
-  // FIXED: Double-cast to bypass the 'overlap' error
-  const records = result.success 
+  // Cleaned up the casting to satisfy the build warnings
+  const records: EvidenceRecord[] = result.success 
     ? (result.data as unknown as EvidenceRecord[]) 
     : [];
 
   return (
-    <div className="min-h-screen bg-black text-slate-300 p-6 md:p-12 font-mono">
+    <div className="min-h-screen bg-black text-white p-6 md:p-12 font-mono">
       <div className="max-w-6xl mx-auto">
-        <header className="mb-12 border-l-4 border-[#4A90E2] pl-6 py-2">
-          <h1 className="text-4xl font-black tracking-tighter text-white uppercase">
+        <header className="mb-12 border-b border-[#4A90E2]/30 pb-8">
+          <h1 className="text-5xl font-black tracking-tighter text-white uppercase italic">
             The_Manifest
           </h1>
-          <p className="text-[10px] text-[#4A90E2] font-bold tracking-[0.2em] mt-2 italic">
-            STATUS: PUBLIC_ACCESS // RECORDS_LOADED: {records.length}
-          </p>
+          <div className="flex items-center gap-4 mt-4">
+            <span className="bg-[#4A90E2] text-black text-[9px] font-black px-2 py-1 uppercase tracking-widest">
+              Public_Access
+            </span>
+            <p className="text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase">
+              Records_Loaded: {records.length.toString().padStart(3, '0')}
+            </p>
+          </div>
         </header>
 
-        {/* Ensure search-client.tsx exists in this same folder */}
         <PublicSearchClient initialRecords={records} />
       </div>
     </div>

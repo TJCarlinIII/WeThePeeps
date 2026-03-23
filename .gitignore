@@ -18,3 +18,8 @@ Thumbs.db
 # Large Assets (Keep small UI icons, but ignore raw 4K video/huge backups)
 *.log
 npm-debug.log*
+.open-next/
+.next/
+node_modules/
+.wrangler/
+.env

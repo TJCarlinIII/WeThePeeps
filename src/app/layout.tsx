@@ -1,46 +1,45 @@
-import { Libre_Baskerville, Lora, JetBrains_Mono } from "next/font/google";
+import type { Metadata } from "next";
+import { Libre_Baskerville, Lora, Space_Mono } from "next/font/google";
 import "./globals.css";
 
+// 1. Initialize fonts and assign them to CSS variables
 const libreBaskerville = Libre_Baskerville({
-  subsets: ["latin"],
-  variable: "--font-heading",
   weight: ["400", "700"],
-  style: ["normal", "italic"],
-  display: "swap",
+  subsets: ["latin"],
+  variable: "--font-libre",
 });
 
 const lora = Lora({
   subsets: ["latin"],
-  variable: "--font-sans",
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
+  variable: "--font-lora",
 });
 
-const mono = JetBrains_Mono({
+const mono = Space_Mono({
+  weight: ["400", "700"],
   subsets: ["latin"],
   variable: "--font-mono",
-  weight: ["400", "500", "700"],
-  display: "swap",
 });
 
-export const metadata = {
-  title: "We The Peeps | Public Interest Archive",
-  description:
-    "Accountability journalism and legal evidence archive. Documenting government misconduct in the public interest.",
+export const metadata: Metadata = {
+  title: "We The Peeps | Accountability & Transparency",
+  description: "A community platform for municipal transparency and public records.",
 };
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
-    // Adding 'dark' here forces Tailwind's dark mode variables
-    // style={{ colorScheme: 'dark' }} tells the browser to use dark scrollbars/inputs
-    <html lang="en" className="dark" style={{ colorScheme: 'dark' }}>
-      <body className="bg-black antialiased">
+    <html lang="en">
+      {/* 2. Apply the font variables to the body. 
+        This clears the 'assigned a value but never used' warnings.
+      */}
+      <body
+        className={`${libreBaskerville.variable} ${lora.variable} ${mono.variable} font-sans antialiased bg-black text-white`}
+      >
         {children}
       </body>
     </html>
-  )
+  );
 }

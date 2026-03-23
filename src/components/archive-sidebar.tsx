@@ -1,4 +1,3 @@
-// src/components/archive-sidebar.tsx
 import Link from 'next/link';
 
 const HIERARCHY = [
@@ -30,11 +29,7 @@ const HIERARCHY = [
 
 export default function ArchiveSidebar() {
   return (
-    <nav className="w-80 h-screen sticky top-0 bg-black border-r border-slate-800 p-6 font-mono text-[11px] overflow-y-auto no-scrollbar">
-      {/* 1. overflow-y-auto: Allows scrolling up and down.
-          2. no-scrollbar: Uses the custom CSS rule we added to globals.css to hide the bars.
-      */}
-      
+    <nav className="h-full bg-black p-6 font-mono text-[11px] overflow-y-auto no-scrollbar">
       <div className="mb-10">
         <h2 className="text-[#4A90E2] font-black tracking-[0.3em] uppercase mb-1">Navigation_Matrix</h2>
         <div className="h-1 w-12 bg-[#4A90E2]"></div>
@@ -45,17 +40,22 @@ export default function ArchiveSidebar() {
           <h3 className="text-white font-black uppercase tracking-widest mb-2 border-b border-slate-900 pb-1">
             {section.branch}
           </h3>
-          <p className="text-[#C4A77D] italic mb-4 ml-2 opacity-80">{section.lead}</p>
+          <p className="text-[#4A90E2]/60 italic mb-4 ml-2 uppercase text-[9px] tracking-widest">
+            Lead: {section.lead}
+          </p>
           
           {section.departments.map((dept) => (
             <div key={dept.name} className="ml-4 mb-4">
-              <h4 className="text-slate-500 font-bold uppercase mb-2 tracking-tighter">{dept.name}
+              <h4 className="text-slate-500 font-bold uppercase mb-2 tracking-tighter">
+                {dept.name}
               </h4>
-              <ul className="space-y-1 border-l border-slate-800 ml-1 pl-4">
+              <ul className="space-y-1 border-l border-slate-900 ml-1 pl-4">
                 {dept.individuals.map((person) => (
                   <li key={person}>
-                    <Link href={`/evidence/${person.toLowerCase().replace(/ /g, '-')}`} 
-                          className="hover:text-[#4A90E2] text-slate-400 transition-colors block py-1">
+                    <Link 
+                      href={`/evidence/${person.toLowerCase().replace(/ /g, '-')}`} 
+                      className="hover:text-[#4A90E2] text-slate-400 transition-colors block py-1"
+                    >
                       {person}
                     </Link>
                   </li>
