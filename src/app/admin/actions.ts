@@ -94,3 +94,10 @@ export async function getPublicEvidence(id: string) {
     return null;
   }
 }
+
+export interface Profile {
+  id: number;
+  name: string;
+  title: string;
+  officer_name: string; // matches what src/lib/actions.ts is expecting
+}

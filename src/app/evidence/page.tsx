@@ -1,6 +1,8 @@
 import { getEvidenceRecords } from '../admin/actions';
 import { EvidenceRecord } from '@/types';
-import PublicSearchClient from '@/app/evidence/search-client';
+import PublicSearchClient from './search-client';
+
+export const dynamic = 'force-dynamic'; 
 
 export const metadata = {
   title: 'Public Evidence Archive | We The Peeps',

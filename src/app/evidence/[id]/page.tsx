@@ -1,3 +1,4 @@
+// src/app/evidence/[id]/page.tsx
 import { Metadata } from 'next';
 import { getPublicEvidence } from '../../admin/actions';
 import { EvidenceRecord } from '@/types';
@@ -7,15 +8,15 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-// SEO ENGINE: This makes Jennifer Mansfield searchable on Google
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const record = await getPublicEvidence(id);
 
   if (!record) return { title: 'Record Not Found | We The Peeps' };
 
-  const seoTitle = `Evidence: ${record.official} | ${record.title}`;
-  const seoDesc = `Public archive regarding ${record.official}. Review the documentation for wethepeeps.net community accountability.`;
+  // SEO Text updated to remove underscores
+  const seoTitle = `Evidence Entry: ${record.official} | ${record.title}`;
+  const seoDesc = `Decentralized accountability archive concerning ${record.official}. Review the documentation on wethepeeps.net.`;
 
   return {
     title: seoTitle,
@@ -34,18 +35,19 @@ export default async function PublicEvidencePage({ params }: Props) {
   if (!record) notFound();
 
   return (
-    <div className="min-h-screen bg-black text-white p-8 font-mono">
-      <article className="max-w-4xl mx-auto border border-slate-800 p-8 rounded-lg bg-slate-900/10">
+    <div className="min-h-screen bg-black text-white p-6 md:p-12 font-mono flex flex-col items-center">
+      <article className="max-w-4xl w-full border border-slate-800 p-8 rounded-lg bg-slate-900/10">
         <header className="mb-8 border-b border-[#4A90E2]/30 pb-6">
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-[#4A90E2] font-bold text-[10px] tracking-[0.3em] uppercase underline decoration-dotted">Archive_Entry_{record.id}</span>
+              <span className="text-[#4A90E2] font-bold text-[10px] tracking-[0.3em] uppercase">Archive Entry: {record.id.toString().padStart(4, '0')}</span>
+              {/* Cleaned 'official' name with spaces */}
               <h1 className="text-4xl font-black mt-2 tracking-tighter uppercase">{record.official}</h1>
               <p className="text-xl text-slate-400 mt-1">{record.title}</p>
             </div>
             {record.isCritical === 1 && (
-              <div className="bg-red-600 text-white px-4 py-2 font-black text-xs animate-pulse">
-                CRITICAL_FINDING
+              <div className="bg-red-600 text-white px-4 py-2 font-black text-xs animate-pulse uppercase shadow-[0_0_15px_rgba(220,38,38,0.3)]">
+                CRITICAL FINDING
               </div>
             )}
           </div>
@@ -54,7 +56,6 @@ export default async function PublicEvidencePage({ params }: Props) {
           </div>
         </header>
 
-        {/* The Body Content */}
         <div className="prose prose-invert max-w-none font-sans text-lg leading-relaxed whitespace-pre-wrap text-slate-300">
           {record.content}
         </div>
