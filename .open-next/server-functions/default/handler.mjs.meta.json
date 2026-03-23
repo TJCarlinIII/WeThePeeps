@@ -3242,13 +3242,13 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/app/test-db/route_client-reference-manifest.js": {
-      "bytes": 6655,
+    ".open-next/server-functions/default/.next/server/app/test/page_client-reference-manifest.js": {
+      "bytes": 6647,
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/app/test/page_client-reference-manifest.js": {
-      "bytes": 6647,
+    ".open-next/server-functions/default/.next/server/app/test-db/route_client-reference-manifest.js": {
+      "bytes": 6655,
       "imports": [],
       "format": "cjs"
     },
@@ -3278,7 +3278,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/node_modules/next/dist/server/load-manifest.js": {
-      "bytes": 24329,
+      "bytes": 24508,
       "imports": [
         {
           "path": "fs",
@@ -3301,14 +3301,14 @@
           "original": "/var/www/wethepeeps.net/www/html/wethepeeps/.open-next/server-functions/default/.next/server/app/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/.next/server/app/test-db/route_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/var/www/wethepeeps.net/www/html/wethepeeps/.open-next/server-functions/default/.next/server/app/test-db/route_client-reference-manifest.js"
-        },
-        {
           "path": ".open-next/server-functions/default/.next/server/app/test/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/var/www/wethepeeps.net/www/html/wethepeeps/.open-next/server-functions/default/.next/server/app/test/page_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/.next/server/app/test-db/route_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/var/www/wethepeeps.net/www/html/wethepeeps/.open-next/server-functions/default/.next/server/app/test-db/route_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/.next/server/app/evidence/route_client-reference-manifest.js",
@@ -4078,7 +4078,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/.next/server/app/admin/add-evidence/page.js": {
-      "bytes": 10625,
+      "bytes": 121108,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js",
@@ -6265,11 +6265,11 @@
         ".open-next/server-functions/default/.next/server/app/page_client-reference-manifest.js": {
           "bytesInOutput": 6046
         },
-        ".open-next/server-functions/default/.next/server/app/test-db/route_client-reference-manifest.js": {
-          "bytesInOutput": 6136
-        },
         ".open-next/server-functions/default/.next/server/app/test/page_client-reference-manifest.js": {
           "bytesInOutput": 6124
+        },
+        ".open-next/server-functions/default/.next/server/app/test-db/route_client-reference-manifest.js": {
+          "bytesInOutput": 6136
         },
         ".open-next/server-functions/default/.next/server/app/evidence/route_client-reference-manifest.js": {
           "bytesInOutput": 6140
@@ -6287,7 +6287,7 @@
           "bytesInOutput": 6363
         },
         ".open-next/server-functions/default/node_modules/next/dist/server/load-manifest.js": {
-          "bytesInOutput": 17281
+          "bytesInOutput": 17449
         },
         ".open-next/server-functions/default/node_modules/react/cjs/react-jsx-runtime.production.js": {
           "bytesInOutput": 750
@@ -6395,7 +6395,7 @@
           "bytesInOutput": 7434
         },
         ".open-next/server-functions/default/.next/server/app/admin/add-evidence/page.js": {
-          "bytesInOutput": 10808
+          "bytesInOutput": 127118
         },
         ".open-next/server-functions/default/.next/server/app/page.js": {
           "bytesInOutput": 155626
@@ -6515,7 +6515,7 @@
           "bytesInOutput": 57099
         }
       },
-      "bytes": 2447266
+      "bytes": 2563744
     }
   }
 }

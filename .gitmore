@@ -1,0 +1,12 @@
+# 1. Add the updated gitignore
+git add .gitignore
+
+# 2. Add the core logic and force-add the config
+git add src/app/admin/add-evidence/page.tsx src/app/admin/actions.ts package.json
+git add -f wrangler.toml
+
+# 3. Final Commit
+git commit -m "Success: Cleaned build artifacts and finalized admin ingress auth"
+
+# 4. Push to remote
+git push origin main
