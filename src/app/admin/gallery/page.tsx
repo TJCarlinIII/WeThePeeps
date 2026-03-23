@@ -4,9 +4,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { 
   getEvidenceRecords, 
   toggleEvidenceCritical, 
-  deleteEvidenceRecord, 
-  type EvidenceRecord 
+  deleteEvidenceRecord 
 } from '../actions';
+import { EvidenceRecord } from '@/types';
 
 export default function EvidenceGallery() {
   const [records, setRecords] = useState<EvidenceRecord[]>([]);

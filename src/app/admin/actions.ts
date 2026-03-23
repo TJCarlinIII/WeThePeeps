@@ -1,17 +1,7 @@
 "use server";
 
+import { EvidenceRecord } from "@/types";
 import { cookies } from "next/headers";
-
-// EXPORT THIS so other files can see it
-export interface EvidenceRecord {
-  id: number;
-  title: string;
-  official: string;
-  statute: string;
-  content: string;
-  isCritical: number;
-  created_at: string;
-}
 
 interface Env {
   DB: D1Database;
