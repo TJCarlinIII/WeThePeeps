@@ -1,0 +1,25 @@
+name = "wethepeeps-site"
+main = ".open-next/worker.js"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[[kv_namespaces]]
+binding = "WETHEPEEPS_ASSETS"
+id = "72d8125bd9b34ec58fc4493be3b096e7"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "wethepeeps"
+database_id = "d2af6c35-b7a6-4244-aab9-075d63dfdae6"
+
+[[routes]]
+pattern = "wethepeeps.net"
+custom_domain = true
+
+[[routes]]
+pattern = "www.wethepeeps.net"
+custom_domain = true
