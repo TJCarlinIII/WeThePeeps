@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import Link from 'next/link';
 
-interface Evidence {
+interface SectorEvidence {
   id: number;
   title: string;
   official: string;
@@ -20,11 +20,26 @@ export default async function SectorDetailPage({ params }: { params: Promise<{ n
   const context = await getCloudflareContext({ async: true });
   const env = (context.env as unknown) as { DB: D1Database };
 
-  const { results } = await env.DB.prepare(
-    "SELECT * FROM evidence WHERE sector = ? ORDER BY id DESC"
-  ).bind(decodedName).all();
+  // Adjusted query to pull incident records matching the sector
+  const { results } = await env.DB.prepare(`
+    SELECT 
+      i.id, 
+      i.title, 
+      a.full_name as official, 
+      st.citation as statute, 
+      s.name as sector, 
+      i.description as content, 
+      i.is_critical as isCritical
+    FROM incidents i
+    LEFT JOIN actors a ON i.actor_id = a.id
+    LEFT JOIN entities e ON i.entity_id = e.id
+    LEFT JOIN sectors s ON e.sector_id = s.id
+    LEFT JOIN statutes st ON i.statute_id = st.id
+    WHERE s.name = ? OR s.slug = ?
+    ORDER BY i.id DESC
+  `).bind(decodedName, decodedName).all();
   
-  const evidence = results as unknown as Evidence[];
+  const evidence = results as unknown as SectorEvidence[];
 
   return (
     <main className="min-h-screen bg-black text-white p-8 font-mono">
@@ -46,7 +61,7 @@ export default async function SectorDetailPage({ params }: { params: Promise<{ n
           </div>
         ) : (
           <div className="space-y-4">
-            {evidence.map((item: Evidence) => (
+            {evidence.map((item: SectorEvidence) => (
               <div key={item.id} className="border border-slate-900 bg-slate-900/5 p-6 hover:bg-slate-900/20 transition-colors">
                 <div className="flex justify-between items-start mb-4">
                   <h2 className="text-xl font-bold uppercase">{item.title}</h2>
@@ -60,8 +75,8 @@ export default async function SectorDetailPage({ params }: { params: Promise<{ n
                   {item.content}
                 </p>
                 <div className="flex gap-4 text-[10px] font-bold uppercase">
-                  <span className="text-[#4A90E2]">Actor: {item.official}</span>
-                  <span className="text-slate-600">Statute: {item.statute}</span>
+                  <span className="text-[#4A90E2]">Actor: {item.official || 'Unidentified'}</span>
+                  <span className="text-slate-600">Statute: {item.statute || 'Unclassified'}</span>
                 </div>
               </div>
             ))}

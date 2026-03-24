@@ -1,7 +1,7 @@
 "use server";
 
-import { EvidenceRecord } from "@/types";
 import { cookies } from "next/headers";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 interface Env {
   DB: D1Database;
@@ -25,14 +25,43 @@ export async function authenticateAdmin(passphrase: string) {
   return { success: false, error: "Invalid Credentials" };
 }
 
+/**
+ * DASHBOARD STATS: Powers the AdminDashboardHeader cards
+ */
+export async function getIncidentStats() {
+  const ctx = await getCloudflareContext({ async: true });
+  const db = (ctx.env as unknown as Env).DB;
+
+  try {
+    const stats = await db.prepare(`
+      SELECT 
+        SUM(CASE WHEN is_critical = 1 THEN 1 ELSE 0 END) as critical,
+        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+        COUNT(*) as total
+      FROM incidents
+    `).first();
+
+    return {
+      critical: Number(stats?.critical) || 0,
+      pending: Number(stats?.pending) || 0,
+      total: Number(stats?.total) || 0
+    };
+  } catch (err) {
+    console.error("STATS_FETCH_ERROR:", err);
+    return { critical: 0, pending: 0, total: 0 };
+  }
+}
+
+/**
+ * FETCH RECORDS: Used for the Evidence management table
+ */
 export async function getEvidenceRecords() {
-  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
   const ctx = await getCloudflareContext({ async: true });
   const db = (ctx.env as unknown as Env).DB; 
 
   try {
     const { results } = await db
-      .prepare("SELECT * FROM evidence ORDER BY created_at DESC")
+      .prepare("SELECT * FROM incidents ORDER BY event_date DESC")
       .all();
     return { success: true, data: results };
   } catch (error) {
@@ -41,69 +70,18 @@ export async function getEvidenceRecords() {
   }
 }
 
-export async function toggleEvidenceCritical(id: number, currentStatus: number) {
-  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-  const ctx = await getCloudflareContext({ async: true });
-  const db = (ctx.env as unknown as Env).DB;
-
-  const newStatus = currentStatus === 1 ? 0 : 1;
-
-  try {
-    await db
-      .prepare("UPDATE evidence SET isCritical = ? WHERE id = ?")
-      .bind(newStatus, id)
-      .run();
-    return { success: true, newStatus };
-  } catch (error) {
-    console.error("D1_UPDATE_ERROR:", error);
-    return { success: false, error: "Failed to update record priority" };
-  }
-}
-
+/**
+ * DELETE RECORD: Purge an incident from D1
+ */
 export async function deleteEvidenceRecord(id: number) {
-  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
   const ctx = await getCloudflareContext({ async: true });
   const db = (ctx.env as unknown as Env).DB;
 
   try {
-    await db.prepare("DELETE FROM evidence WHERE id = ?").bind(id).run();
+    await db.prepare("DELETE FROM incidents WHERE id = ?").bind(id).run();
     return { success: true };
   } catch (error) {
     console.error("D1_DELETE_ERROR:", error);
     return { success: false, error: "Failed to purge record from database" };
-  }
-}
-
-export async function getPublicEvidence(id: string) {
-  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-  const ctx = await getCloudflareContext({ async: true });
-  const db = (ctx.env as unknown as Env).DB;
-
-  try {
-    const result = await db
-      .prepare("SELECT * FROM evidence WHERE id = ?")
-      .bind(id)
-      .first<EvidenceRecord>();
-    return result;
-  } catch (error) {
-    console.error("D1_PUBLIC_FETCH_ERROR:", error);
-    return null;
-  }
-}
-
-export async function getHierarchy() {
-  try {
-    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-    const ctx = await getCloudflareContext({ async: true });
-    const db = (ctx.env as unknown as Env).DB;
-
-    const { results } = await db.prepare(
-      "SELECT name, branch, department FROM official_profiles ORDER BY branch DESC, rank_order ASC"
-    ).all();
-    
-    return results;
-  } catch (error) {
-    console.error("D1_HIERARCHY_ERROR:", error);
-    return [];
   }
 }

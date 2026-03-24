@@ -13,9 +13,13 @@ export default async function EntitiesPage() {
   const context = await getCloudflareContext({ async: true });
   const env = (context.env as unknown) as { DB: D1Database };
   
-  const { results: entities } = await env.DB.prepare(
-    "SELECT * FROM entities ORDER BY name ASC"
-  ).all() as { results: Entity[] };
+  // Use a JOIN to attach the sector name, which EntitySearch relies on
+  const { results: entities } = await env.DB.prepare(`
+    SELECT e.id, e.name, e.slug, s.name as sector 
+    FROM entities e
+    LEFT JOIN sectors s ON e.sector_id = s.id
+    ORDER BY e.name ASC
+  `).all() as { results: Entity[] };
 
   return (
     <main className="min-h-screen bg-black text-white p-8 md:p-20 font-mono">

@@ -1,42 +1,32 @@
-"use client";
+// src/app/admin/db/page.tsx
+import { getIncidentStats } from "@/app/admin/actions";
+import AdminDashboardHeader from "@/components/admin/AdminDashboardHeader";
+import AdminGuard from "@/components/admin/AdminGuard";
 
-export const dynamic = "force-dynamic";
+export default async function AdminDashboardPage() {
+  // Fetch live stats from D1 via Server Action
+  const stats = await getIncidentStats();
 
-import React from 'react';
-import Link from 'next/link';
-
-const TABLES = [
-  { id: 'entities', label: 'Organizations', icon: '🏢' },
-  { id: 'actors', label: 'Individuals/Officials', icon: '👤' },
-  { id: 'incidents', label: 'Timeline Events', icon: '📅' },
-  { id: 'media', label: 'Evidence/Media', icon: '📎' },
-  { id: 'statutes', label: 'Legal Statutes (MCL)', icon: '⚖️' },
-  { id: 'content', label: 'Long-form Articles', icon: '📝' }
-];
-
-export default function MasterDatabaseUtilities() {
   return (
-    <div className="min-h-screen bg-black text-white p-8 font-mono">
-      <div className="max-w-5xl mx-auto border border-[#4A90E2]/30 p-8 rounded-lg bg-slate-900/10 shadow-2xl">
-        <header className="mb-10 border-b border-[#4A90E2]/20 pb-6">
-          <h1 className="text-2xl font-bold tracking-tighter text-[#4A90E2] uppercase">Master_DB_Utilities</h1>
-          <p className="text-[10px] text-slate-500 uppercase mt-2 font-bold tracking-widest">Select Sector for Data Ingress</p>
+    <AdminGuard>
+      <div className="min-h-screen bg-black text-white p-8 font-mono">
+        <header className="mb-8">
+          <h1 className="text-2xl font-black uppercase italic tracking-tighter">
+            Control_Panel // System_Overview
+          </h1>
+          <p className="text-slate-500 text-[10px] uppercase">
+            Data_Source: Cloudflare_D1_Primary
+          </p>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {TABLES.map((table) => (
-            <Link 
-              key={table.id} 
-              href={`/admin/db/${table.id}`}
-              className="group border border-slate-800 p-6 rounded-lg hover:border-[#4A90E2] transition-all bg-slate-900/20 hover:bg-slate-900/40"
-            >
-              <div className="text-3xl mb-4">{table.icon}</div>
-              <h2 className="text-lg font-bold group-hover:text-[#4A90E2] uppercase">{table.label}</h2>
-              <p className="text-[10px] text-slate-600 mt-2 font-bold">ACCESS_REGISTRY_{table.id.toUpperCase()}</p>
-            </Link>
-          ))}
+        {/* The Live Dashboard Cards */}
+        <AdminDashboardHeader stats={stats} />
+
+        <div className="grid grid-cols-1 gap-4">
+          {/* Your existing table navigation or database links go here */}
+          <p className="text-slate-700 text-[10px]">Standing by for ingress...</p>
         </div>
       </div>
-    </div>
+    </AdminGuard>
   );
 }

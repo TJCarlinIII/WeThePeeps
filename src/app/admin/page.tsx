@@ -8,10 +8,10 @@ import Link from 'next/link';
 const TABLES = [
   { id: 'entities', label: 'Organizations', icon: '🏢' },
   { id: 'actors', label: 'Individuals/Officials', icon: '👤' },
-  { id: 'incidents', label: 'Timeline Events', icon: '📅' },
+  { id: 'incidents', label: 'Timeline Events (Evidence)', icon: '📅' },
   { id: 'media', label: 'Evidence/Media', icon: '📎' },
   { id: 'statutes', label: 'Legal Statutes (MCL)', icon: '⚖️' },
-  { id: 'content', label: 'Long-form Articles', icon: '📝' },
+  { id: 'posts', label: 'Long-form Articles', icon: '📝' },
   { id: 'sectors', label: 'Sectors', icon: '📂' },
 ];
 

@@ -25,3 +25,22 @@ export async function saveStatute(formData: FormData) {
     return { success: false, error: "Failed to log statute." };
   }
 }
+
+export async function getIncidentStats() {
+  const context = await getCloudflareContext();
+  const env = context.env as unknown as { DB: D1Database };
+
+  const stats = await env.DB.prepare(`
+    SELECT 
+      SUM(CASE WHEN is_critical = 1 THEN 1 ELSE 0 END) as critical,
+      SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+      COUNT(*) as total
+    FROM incidents
+  `).first();
+
+  return {
+    critical: (stats?.critical as number) || 0,
+    pending: (stats?.pending as number) || 0,
+    total: (stats?.total as number) || 0
+  };
+}

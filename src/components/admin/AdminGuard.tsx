@@ -1,59 +1,40 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
-import React, { useState } from 'react';
-import { authenticateAdmin } from '@/app/admin/actions';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passphrase, setPassphrase] = useState('');
-  const [hasError, setHasError] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setHasError(false);
-    
-    const result = await authenticateAdmin(passphrase);
-    if (result.success) {
-      setIsAuthenticated(true);
-    } else {
-      setHasError(true);
+  useEffect(() => {
+    // Avoid synchronous state setting within the effect body
+    let isMounted = true;
+    queueMicrotask(() => {
+      if (isMounted) setMounted(true);
+    });
+    return () => { isMounted = false; };
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !isLoading && !isAuthenticated && pathname !== '/admin/login') {
+      router.push('/admin/login');
     }
-  };
+  }, [isAuthenticated, isLoading, router, pathname, mounted]);
 
-  if (!isAuthenticated) {
+  if (!mounted || isLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center font-mono p-4">
-        <form 
-          onSubmit={handleLogin} 
-          className={`border ${hasError ? 'border-red-600' : 'border-[#4A90E2]/50'} p-8 rounded-lg bg-slate-900/20 max-w-sm w-full shadow-[0_0_30px_rgba(74,144,226,0.1)] transition-colors duration-300`}
-        >
-          <h2 className={`${hasError ? 'text-red-500' : 'text-[#4A90E2]'} mb-6 text-center tracking-widest uppercase text-xs font-bold`}>
-            {hasError ? "ACCESS_DENIED" : "Registry_Lock"}
-          </h2>
-          
-          <input 
-            type="password" 
-            placeholder="Admin Passphrase"
-            className={`w-full bg-black border ${hasError ? 'border-red-900' : 'border-slate-700'} p-3 text-white mb-4 focus:border-[#4A90E2] outline-none transition-colors`}
-            value={passphrase}
-            onChange={(e) => setPassphrase(e.target.value)}
-          />
-          
-          <button className={`${hasError ? 'bg-red-600' : 'bg-[#4A90E2]'} w-full text-black py-3 font-bold uppercase text-xs tracking-widest transition-colors`}>
-            {hasError ? "RETRY_AUTH" : "Unlock_Database"}
-          </button>
-
-          {hasError && (
-            <p className="text-red-500 text-[9px] mt-4 text-center uppercase tracking-tighter animate-pulse">
-              Invalid credentials. unauthorized access attempt logged.
-            </p>
-          )}
-        </form>
+      <div className="bg-black min-h-screen flex items-center justify-center font-mono text-[#4A90E2]">
+        INITIALIZING_SECURE_SESSION...
       </div>
     );
   }
+
+  // Do not block the login page itself
+  if (!isAuthenticated && pathname !== '/admin/login') return null;
 
   return <>{children}</>;
 }

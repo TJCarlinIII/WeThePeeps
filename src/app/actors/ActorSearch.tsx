@@ -1,7 +1,5 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { useState } from 'react';
 import Link from 'next/link';
 
@@ -9,6 +7,7 @@ interface Actor {
   id: number;
   name: string;
   sector: string;
+  slug: string;
 }
 
 export default function ActorSearch({ initialActors }: { initialActors: Actor[] }) {
@@ -16,7 +15,7 @@ export default function ActorSearch({ initialActors }: { initialActors: Actor[] 
 
   const filtered = initialActors.filter(a => 
     a.name.toLowerCase().includes(query.toLowerCase()) ||
-    a.sector.toLowerCase().includes(query.toLowerCase())
+    (a.sector && a.sector.toLowerCase().includes(query.toLowerCase()))
   );
 
   return (
@@ -39,14 +38,14 @@ export default function ActorSearch({ initialActors }: { initialActors: Actor[] 
         {filtered.map((actor) => (
           <Link 
             key={actor.id} 
-            href={`/actors/${encodeURIComponent(actor.name)}`}
+            href={`/actors/${actor.slug}`}
             className="group border border-slate-900 bg-slate-900/5 p-6 hover:border-[#4A90E2] transition-all relative overflow-hidden"
           >
             <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-1">
               Primary_Sector
             </div>
             <div className="text-[#4A90E2] text-[10px] font-black uppercase mb-4 tracking-tighter">
-              {actor.sector}
+              {actor.sector || "Unclassified"}
             </div>
             <h3 className="text-xl font-bold uppercase text-white group-hover:text-[#4A90E2] transition-colors leading-none italic">
               {actor.name}

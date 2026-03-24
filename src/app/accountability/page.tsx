@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import React, { useState, useEffect } from 'react';
 import { cn } from "@/lib/utils";
+import Link from 'next/link';
 
 interface Actor {
   id: number;
@@ -14,6 +15,18 @@ interface Actor {
   slug?: string;
 }
 
+// Define the shape of the D1 API response to satisfy TypeScript
+interface D1Response {
+  results: Array<{
+    id: number;
+    full_name: string;
+    job_title: string;
+    status: string;
+    slug: string;
+    entity_name?: string;
+  }>;
+}
+
 export default function DossiersPage() {
   const [actors, setActors] = useState<Actor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,9 +35,18 @@ export default function DossiersPage() {
     const loadActors = async () => {
       try {
         const response = await fetch('/api/db/actors');
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          setActors(data);
+        const data = (await response.json()) as D1Response;
+        
+        if (data && data.results && Array.isArray(data.results)) {
+          const mappedActors = data.results.map((row) => ({
+            id: row.id,
+            name: row.full_name, // Mapping DB 'full_name' to UI 'name'
+            role: row.job_title,  // Mapping DB 'job_title' to UI 'role'
+            status: row.status,
+            slug: row.slug,
+            agency: row.entity_name || "Undefined_Agency" 
+          }));
+          setActors(mappedActors);
         }
       } catch (err) {
         console.error("FAILED_TO_LOAD_REGISTRY:", err);
@@ -54,7 +76,7 @@ export default function DossiersPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {actors.map((actor) => (
-            <a 
+            <Link 
               key={actor.id}
               href={`/accountability/${actor.slug || actor.id}`}
               className="group relative border border-slate-800 bg-slate-900/20 p-6 hover:border-[#4A90E2]/60 transition-all overflow-hidden"
@@ -62,7 +84,7 @@ export default function DossiersPage() {
               <div className="absolute top-0 right-0 w-8 h-8 border-t border-r border-slate-700 group-hover:border-[#4A90E2]" />
               
               <span className="text-[10px] text-[#4A90E2] font-bold uppercase tracking-widest block mb-1">
-                {actor.agency || "Undefined_Agency"}
+                {actor.agency}
               </span>
               <h2 className="text-xl font-bold mb-4 group-hover:text-blue-400 transition-colors">
                 {actor.name}
@@ -89,7 +111,7 @@ export default function DossiersPage() {
                 <div className="h-[1px] flex-1 bg-[#4A90E2]/30" />
                 <span>→</span>
               </div>
-            </a>
+            </Link>
           ))}
 
           {actors.length === 0 && (

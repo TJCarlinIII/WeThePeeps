@@ -1,105 +1,105 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { notFound } from "next/navigation";
-import Link from "next/link";
+export const dynamic = "force-dynamic";
 
-interface EvidenceRecord {
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+
+interface EvidenceDetail {
   id: number;
   title: string;
-  content: string;
   official: string;
+  statute: string;
   sector: string;
-  is_critical: number;
+  content: string;
+  fileUrl: string;
+  isCritical: number;
   created_at: string;
+}
+
+interface CloudflareEnv {
+  DB: D1Database;
 }
 
 export default async function EvidenceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const context = await getCloudflareContext({ async: true });
-  const env = (context.env as unknown) as { DB: D1Database };
+  const env = (context.env as unknown) as CloudflareEnv;
 
-  const record = await env.DB.prepare(
-    "SELECT * FROM evidence WHERE id = ?"
-  ).bind(id).first<EvidenceRecord>();
+  // Fully joined query to get the rich record details required by the page
+  const evidence = await env.DB.prepare(`
+    SELECT 
+      i.id, 
+      i.title, 
+      i.description as content,
+      a.full_name AS official, 
+      st.citation AS statute,
+      s.name AS sector, 
+      i.is_critical AS isCritical, 
+      i.event_date AS created_at,
+      m.file_path as fileUrl
+    FROM incidents i
+    LEFT JOIN actors a ON i.actor_id = a.id
+    LEFT JOIN entities e ON i.entity_id = e.id
+    LEFT JOIN sectors s ON e.sector_id = s.id
+    LEFT JOIN statutes st ON i.statute_id = st.id
+    LEFT JOIN media m ON m.incident_id = i.id
+    WHERE i.id = ?
+  `).bind(id).first<EvidenceDetail>();
 
-  if (!record) return notFound();
+  if (!evidence) notFound();
 
   return (
-    <main className="min-h-screen bg-black text-slate-300 font-mono p-6 md:p-12 lg:p-20">
+    <main className="min-h-screen bg-black text-white p-8 md:p-20 font-mono">
       <div className="max-w-4xl mx-auto">
-        <nav className="flex justify-between items-center mb-12 pb-6 border-b border-slate-900">
-          <Link href="/codex" className="text-[10px] text-[#4A90E2] font-black uppercase tracking-[0.3em] hover:text-white transition-colors">
-            {`\u2190 Back_To_Archive`}
-          </Link>
-          <div className="flex gap-4">
-             <span className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">
-              {`Log_ID: ${record.id.toString().padStart(5, '0')}`}
-            </span>
-            {record.is_critical === 1 && (
-              <span className="text-red-600 text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">
-                [High_Priority_Violation]
-              </span>
-            )}
-          </div>
-        </nav>
+        <Link href="/evidence" className="text-[#4A90E2] text-[10px] font-bold uppercase tracking-widest hover:underline mb-12 inline-block">
+          &lt;&lt; Return_To_Manifest
+        </Link>
 
-        <header className="mb-16">
-          <h1 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase mb-8 leading-tight">
-            {record.title}
-          </h1>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border border-slate-900 p-6 bg-slate-950/20">
-            <div>
-              <label className="text-[9px] text-slate-600 font-black uppercase tracking-widest block mb-1">Involved_Official</label>
-              <span className="text-sm text-white font-bold uppercase">{record.official}</span>
+        <article className="border border-slate-900 bg-slate-900/10 p-8 md:p-12 relative overflow-hidden">
+          {evidence.isCritical === 1 && (
+            <div className="absolute top-0 right-0 bg-red-600 text-black px-4 py-1 text-[10px] font-black uppercase tracking-[0.2em]">
+              High_Priority_Record
             </div>
-            <div>
-              <label className="text-[9px] text-slate-600 font-black uppercase tracking-widest block mb-1">Intelligence_Sector</label>
-              <span className="text-sm text-[#4A90E2] font-bold uppercase">{record.sector}</span>
-            </div>
-            <div>
-              <label className="text-[9px] text-slate-600 font-black uppercase tracking-widest block mb-1">Timestamp</label>
-              <span className="text-sm text-slate-400 font-bold">
-                {new Date(record.created_at).toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
+          )}
+
+          <header className="mb-10">
+            <div className="flex gap-4 mb-4">
+              <span className="bg-[#4A90E2]/10 text-[#4A90E2] text-[10px] px-3 py-1 font-bold border border-[#4A90E2]/20 uppercase">
+                {evidence.sector || "Unknown Sector"}
+              </span>
+              <span className="bg-slate-800 text-slate-400 text-[10px] px-3 py-1 font-bold uppercase">
+                Statute: {evidence.statute || "Unclassified"}
               </span>
             </div>
-          </div>
-        </header>
+            <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-tight italic text-white">
+              {evidence.title}
+            </h1>
+            <div className="mt-6 text-slate-500 text-xs font-bold uppercase tracking-widest">
+              Subject: <span className="text-white">{evidence.official || "Unidentified"}</span> {/* Metadata Separator */} Entered: {evidence.created_at ? new Date(evidence.created_at).toLocaleDateString() : "Date Pending"}
+            </div>
+          </header>
 
-        <article className="prose prose-invert prose-slate max-w-none">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="h-[1px] flex-grow bg-slate-900"></div>
-            <span className="text-[10px] text-slate-700 font-black uppercase tracking-[0.5em]">Begin_Manifest</span>
-            <div className="h-[1px] flex-grow bg-slate-900"></div>
+          <div className="prose prose-invert max-w-none mb-12">
+            <p className="text-slate-300 font-sans leading-relaxed whitespace-pre-wrap">
+              {evidence.content || "No narrative provided."}
+            </p>
           </div>
 
-          <div className="text-lg leading-relaxed text-slate-300 font-sans whitespace-pre-wrap space-y-6">
-            {record.content}
-          </div>
-
-          <div className="flex items-center gap-4 mt-16">
-            <div className="h-[1px] flex-grow bg-slate-900"></div>
-            <span className="text-[10px] text-slate-700 font-black uppercase tracking-[0.5em]">End_Of_Record</span>
-            <div className="h-[1px] flex-grow bg-slate-900"></div>
-          </div>
+          {evidence.fileUrl && (
+            <div className="border-t border-slate-800 pt-8">
+              <h3 className="text-xs font-black uppercase tracking-[0.4em] text-slate-500 mb-4 italic">Supporting_Media</h3>
+              <a 
+                href={evidence.fileUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-4 bg-white text-black px-6 py-4 text-xs font-black uppercase tracking-widest hover:bg-[#4A90E2] hover:text-white transition-all shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+              >
+                Download_Evidence_File
+                <span className="text-[14px]">→</span>
+              </a>
+            </div>
+          )}
         </article>
-
-        <footer className="mt-20 pt-10 border-t border-slate-900 text-center">
-          <p className="text-[10px] text-slate-600 uppercase tracking-widest mb-6">
-            This information is part of the public record under the We The Peeps transparency protocol.
-          </p>
-          <button 
-            onClick={() => window.print()}
-            className="text-[10px] border border-slate-800 px-6 py-3 hover:bg-white hover:text-black transition-all font-black uppercase tracking-widest"
-          >
-            Generate_Physical_Copy (Print)
-          </button>
-        </footer>
       </div>
     </main>
   );
