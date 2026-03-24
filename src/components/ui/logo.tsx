@@ -1,23 +1,33 @@
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
-export default function Logo({ className, size = "text-2xl" }: { className?: string; size?: string }) {
+export default function Logo({ 
+  className, 
+  size = "text-5xl md:text-7xl" 
+}: { 
+  className?: string; 
+  size?: string 
+}) {
   return (
-    <div className={cn("flex flex-col tracking-tighter", className)}>
+    <div className={cn("flex flex-col items-center justify-center", className)}>
       <h1 
         className={cn(
           size,
-          "font-black uppercase leading-none bg-clip-text text-transparent bg-cover bg-center",
+          // font-black matches the weight of your gold text
+          // tracking-tighter creates that "Preamble" look
+          // whitespace-nowrap prevents the text from breaking into two lines
+          "font-black uppercase leading-none text-transparent bg-clip-text bg-cover bg-center tracking-tighter whitespace-nowrap transition-all duration-300 select-none",
         )}
-        style={{ backgroundImage: 'url(/american-flag.jpg)' }}
+        style={{ 
+          backgroundImage: 'url(/american-flag.jpg)',
+          WebkitBackgroundClip: 'text',
+        }}
       >
         We The Peeps
       </h1>
-      <div className="flex items-center gap-2 mt-1">
-        <span className="h-px w-4 bg-[#C4A77D]/50" />
-        <span className="text-[9px] tracking-[0.3em] text-[#C4A77D] italic uppercase font-medium">
-          Shall not be infringed
-        </span>
-      </div>
+      
+      {/* The small line was removed as requested, 
+         allowing the gold version in page.tsx to take center stage.
+      */}
     </div>
   );
 }

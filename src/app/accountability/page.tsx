@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import React, { useState, useEffect } from 'react';
 import { cn } from "@/lib/utils";
 
@@ -16,7 +18,6 @@ export default function DossiersPage() {
   const [actors, setActors] = useState<Actor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- FETCH DATA FROM D1 ---
   useEffect(() => {
     const loadActors = async () => {
       try {
@@ -58,7 +59,6 @@ export default function DossiersPage() {
               href={`/accountability/${actor.slug || actor.id}`}
               className="group relative border border-slate-800 bg-slate-900/20 p-6 hover:border-[#4A90E2]/60 transition-all overflow-hidden"
             >
-              {/* Corner Accent */}
               <div className="absolute top-0 right-0 w-8 h-8 border-t border-r border-slate-700 group-hover:border-[#4A90E2]" />
               
               <span className="text-[10px] text-[#4A90E2] font-bold uppercase tracking-widest block mb-1">

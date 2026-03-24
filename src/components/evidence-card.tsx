@@ -22,7 +22,6 @@ export function EvidenceCard({ record }: { record: EvidenceRecord }) {
 
   return (
     <div className="bg-black border border-slate-900 hover:border-[#4A90E2]/40 transition-all group overflow-hidden p-8 rounded-sm relative">
-      {/* Visual Corner Accent */}
       <div className="absolute top-0 right-0 w-6 h-6 border-t border-r border-slate-900 group-hover:border-[#4A90E2] transition-colors" />
 
       <div className="flex justify-between items-start mb-6">

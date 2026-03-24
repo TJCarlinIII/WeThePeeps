@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image"; // 1. Import the Next.js Image component
+import Image from "next/image";
 import {
   Sidebar,
   SidebarContent,
@@ -25,8 +25,21 @@ import {
   ChevronRight,
   Shield,
 } from "lucide-react";
-import { organizations, type Organization } from "@/data/organizations";
 import { cn } from "@/lib/utils";
+
+export interface EntitySubject {
+  id: string | number;
+  name: string;
+  slug?: string;
+}
+
+export interface Entity {
+  id: string;
+  name: string;
+  category: string;
+  icon: string;
+  subjects: EntitySubject[];
+}
 
 const iconMap: Record<string, React.ElementType> = {
   Landmark,
@@ -41,20 +54,24 @@ const iconMap: Record<string, React.ElementType> = {
 };
 
 interface AppSidebarProps {
-  activeOrgId: string;
-  onOrgSelect: (id: string) => void;
+  entities: Entity[];
+  activeEntityId: string;
+  onEntitySelect: (id: string) => void;
 }
 
-function groupByCategory(orgs: Organization[]) {
-  return orgs.reduce<Record<string, Organization[]>>((acc, org) => {
-    if (!acc[org.category]) acc[org.category] = [];
-    acc[org.category].push(org);
+function groupByCategory(items: Entity[]): Record<string, Entity[]> {
+  if (!items || !Array.isArray(items)) return {};
+  
+  return items.reduce<Record<string, Entity[]>>((acc, item) => {
+    const cat = item.category || "Uncategorized";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(item);
     return acc;
   }, {});
 }
 
-export function AppSidebar({ activeOrgId, onOrgSelect }: AppSidebarProps) {
-  const grouped = React.useMemo(() => groupByCategory(organizations), []);
+export function AppSidebar({ entities, activeEntityId, onEntitySelect }: AppSidebarProps) {
+  const grouped = React.useMemo(() => groupByCategory(entities), [entities]);
 
   return (
     <Sidebar
@@ -65,14 +82,13 @@ export function AppSidebar({ activeOrgId, onOrgSelect }: AppSidebarProps) {
       <SidebarHeader className="p-4 border-b border-white/5">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
-            {/* 2. Replaced <img> with <Image /> */}
             <div className="relative h-9 w-9">
               <Image 
                 src="https://raw.githubusercontent.com/TJCarlinIII/WeThePeeps/main/public/WTPLogo.png" 
                 alt="We The Peeps Logo" 
                 fill
                 sizes="36px"
-                priority // Ensures the logo loads immediately for LCP
+                priority 
                 className="object-contain"
               />
             </div>
@@ -90,19 +106,19 @@ export function AppSidebar({ activeOrgId, onOrgSelect }: AppSidebarProps) {
       </SidebarHeader>
 
       <SidebarContent className="p-3 pt-4 overflow-y-auto">
-        {Object.entries(grouped).map(([category, orgs]) => (
+        {Object.entries(grouped).map(([category, items]) => (
           <SidebarGroup key={category} className="mb-4">
             <SidebarGroupLabel className="font-mono text-[9px] uppercase tracking-[0.25em] mb-2 text-slate-500 px-1">
               {category}
             </SidebarGroupLabel>
             <SidebarMenu className="space-y-0.5">
-              {orgs.map((org) => {
-                const Icon = iconMap[org.icon] ?? Landmark;
-                const isActive = activeOrgId === org.id;
+              {items.map((item) => {
+                const Icon = iconMap[item.icon] ?? Landmark;
+                const isActive = activeEntityId === item.id;
                 return (
-                  <SidebarMenuItem key={org.id}>
+                  <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton
-                      onClick={() => onOrgSelect(org.id)}
+                      onClick={() => onEntitySelect(item.id)}
                       className={cn(
                         "group relative p-3 h-auto w-full border transition-all duration-150 rounded-sm cursor-pointer text-left",
                         isActive
@@ -121,16 +137,16 @@ export function AppSidebar({ activeOrgId, onOrgSelect }: AppSidebarProps) {
                           )}
                         />
                         <span className="font-heading text-xs font-bold uppercase tracking-wide leading-tight flex-1">
-                          {org.name}
+                          {item.name}
                         </span>
                         <ChevronRight
                           className={cn(
-                            "w-3 h-3 flex-shrink-0 transition-all",
+                            "w-3.5 h-3.5 flex-shrink-0 transition-all",
                             isActive ? "text-[#4A90E2] opacity-100" : "text-slate-600 opacity-0 group-hover:opacity-100"
                           )}
                         />
                       </div>
-                      {org.subjects.length > 0 && (
+                      {item.subjects && item.subjects.length > 0 && (
                         <div className="mt-1.5 ml-6">
                           <span
                             className={cn(
@@ -138,7 +154,7 @@ export function AppSidebar({ activeOrgId, onOrgSelect }: AppSidebarProps) {
                               isActive ? "text-[#4A90E2]/80" : "text-slate-600"
                             )}
                           >
-                            {org.subjects.length} subject{org.subjects.length !== 1 ? "s" : ""} documented
+                            {item.subjects.length} subject{item.subjects.length !== 1 ? "s" : ""} documented
                           </span>
                         </div>
                       )}

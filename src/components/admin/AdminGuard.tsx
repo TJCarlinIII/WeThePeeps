@@ -1,23 +1,24 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import React, { useState } from 'react';
 import { authenticateAdmin } from '@/app/admin/actions';
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passphrase, setPassphrase] = useState('');
-  const [hasError, setHasError] = useState(false); // Renamed to clarify usage
+  const [hasError, setHasError] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setHasError(false); // Reset error on new attempt
+    setHasError(false);
     
     const result = await authenticateAdmin(passphrase);
     if (result.success) {
       setIsAuthenticated(true);
     } else {
       setHasError(true);
-      // Removed the browser alert to use the inline error instead
     }
   };
 

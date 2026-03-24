@@ -1,75 +1,106 @@
-import { Metadata } from 'next';
-import { getPublicEvidence } from '../../admin/actions';
-import { notFound } from 'next/navigation';
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { notFound } from "next/navigation";
+import Link from "next/link";
 
-interface Props {
-  params: Promise<{ id: string }>;
+interface EvidenceRecord {
+  id: number;
+  title: string;
+  content: string;
+  official: string;
+  sector: string;
+  is_critical: number;
+  created_at: string;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export default async function EvidenceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const record = await getPublicEvidence(id);
-  if (!record) return { title: 'Record Not Found | We The Peeps' };
+  const context = await getCloudflareContext({ async: true });
+  const env = (context.env as unknown) as { DB: D1Database };
 
-  const seoTitle = `Evidence Entry: ${record.official} | ${record.title}`;
-  const seoDesc = `Decentralized accountability archive concerning ${record.official}.`;
+  const record = await env.DB.prepare(
+    "SELECT * FROM evidence WHERE id = ?"
+  ).bind(id).first<EvidenceRecord>();
 
-  return {
-    title: seoTitle,
-    description: seoDesc,
-  };
-}
-
-export default async function PublicEvidencePage({ params }: Props) {
-  const { id } = await params;
-  const record = await getPublicEvidence(id);
-
-  if (!record) notFound();
+  if (!record) return notFound();
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-12 font-mono flex flex-col items-center">
-      <article className="max-w-4xl w-full border border-slate-900 bg-slate-900/5 p-10 relative">
-        {/* Aesthetic Branding */}
-        <div className="absolute top-4 right-6 text-[8px] text-slate-800 font-black tracking-[0.5em] uppercase">
-          WTP_INTERNAL_ARCHIVE
-        </div>
-
-        <header className="mb-10 border-b border-slate-900 pb-8">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-            <div>
-              <span className="text-[#4A90E2] font-black text-[10px] tracking-[0.4em] uppercase">
-                ENTRY_ID: {record.id.toString().padStart(4, '0')}
+    <main className="min-h-screen bg-black text-slate-300 font-mono p-6 md:p-12 lg:p-20">
+      <div className="max-w-4xl mx-auto">
+        <nav className="flex justify-between items-center mb-12 pb-6 border-b border-slate-900">
+          <Link href="/codex" className="text-[10px] text-[#4A90E2] font-black uppercase tracking-[0.3em] hover:text-white transition-colors">
+            {`\u2190 Back_To_Archive`}
+          </Link>
+          <div className="flex gap-4">
+             <span className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">
+              {`Log_ID: ${record.id.toString().padStart(5, '0')}`}
+            </span>
+            {record.is_critical === 1 && (
+              <span className="text-red-600 text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">
+                [High_Priority_Violation]
               </span>
-              {/* FIXED: Removed duplicate 'italic' class here */}
-              <h1 className="text-5xl font-black mt-4 tracking-tighter uppercase italic">
-                {record.official}
-              </h1>
-              <p className="text-xl text-slate-500 mt-2 font-sans italic">{record.title}</p>
-            </div>
-            {record.isCritical === 1 && (
-              <div className="bg-red-950/20 border border-red-600 text-red-500 px-6 py-3 font-black text-xs animate-pulse uppercase tracking-[0.2em]">
-                CRITICAL_FINDING
-              </div>
             )}
+          </div>
+        </nav>
+
+        <header className="mb-16">
+          <h1 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase mb-8 leading-tight">
+            {record.title}
+          </h1>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border border-slate-900 p-6 bg-slate-950/20">
+            <div>
+              <label className="text-[9px] text-slate-600 font-black uppercase tracking-widest block mb-1">Involved_Official</label>
+              <span className="text-sm text-white font-bold uppercase">{record.official}</span>
+            </div>
+            <div>
+              <label className="text-[9px] text-slate-600 font-black uppercase tracking-widest block mb-1">Intelligence_Sector</label>
+              <span className="text-sm text-[#4A90E2] font-bold uppercase">{record.sector}</span>
+            </div>
+            <div>
+              <label className="text-[9px] text-slate-600 font-black uppercase tracking-widest block mb-1">Timestamp</label>
+              <span className="text-sm text-slate-400 font-bold">
+                {new Date(record.created_at).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            </div>
           </div>
         </header>
 
-        {/* Content Body */}
-        <div className="font-sans text-lg leading-relaxed whitespace-pre-wrap text-slate-300 border-l border-slate-900 pl-8 py-4">
-          {record.content}
-        </div>
+        <article className="prose prose-invert prose-slate max-w-none">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="h-[1px] flex-grow bg-slate-900"></div>
+            <span className="text-[10px] text-slate-700 font-black uppercase tracking-[0.5em]">Begin_Manifest</span>
+            <div className="h-[1px] flex-grow bg-slate-900"></div>
+          </div>
 
-        <footer className="mt-16 pt-8 border-t border-slate-900 grid grid-cols-2 gap-4 text-[9px] text-slate-600 uppercase tracking-widest font-black">
-          <div className="flex flex-col gap-1">
-            <span className="text-slate-800">Source_Node:</span>
-            <span>wethepeeps.net</span>
+          <div className="text-lg leading-relaxed text-slate-300 font-sans whitespace-pre-wrap space-y-6">
+            {record.content}
           </div>
-          <div className="flex flex-col gap-1 text-right">
-            <span className="text-slate-800">Verification_Date:</span>
-            <span>{new Date(record.created_at).toLocaleDateString()}</span>
+
+          <div className="flex items-center gap-4 mt-16">
+            <div className="h-[1px] flex-grow bg-slate-900"></div>
+            <span className="text-[10px] text-slate-700 font-black uppercase tracking-[0.5em]">End_Of_Record</span>
+            <div className="h-[1px] flex-grow bg-slate-900"></div>
           </div>
+        </article>
+
+        <footer className="mt-20 pt-10 border-t border-slate-900 text-center">
+          <p className="text-[10px] text-slate-600 uppercase tracking-widest mb-6">
+            This information is part of the public record under the We The Peeps transparency protocol.
+          </p>
+          <button 
+            onClick={() => window.print()}
+            className="text-[10px] border border-slate-800 px-6 py-3 hover:bg-white hover:text-black transition-all font-black uppercase tracking-widest"
+          >
+            Generate_Physical_Copy (Print)
+          </button>
         </footer>
-      </article>
-    </div>
+      </div>
+    </main>
   );
 }

@@ -1,8 +1,10 @@
 "use client";
+
+export const dynamic = "force-dynamic";
+
 import React, { useState, useEffect } from 'react';
 import { TABLE_SCHEMAS } from '@/lib/schemas';
 
-// --- STRICT INTERFACES ---
 interface SchemaField {
   name: string;
   label: string;
@@ -26,12 +28,10 @@ interface DynamicFormProps {
 }
 
 export default function DynamicIngressForm({ tableName, onSave, initialData }: DynamicFormProps) {
-  // --- STATE ---
   const [formData, setFormData] = useState<Record<string, unknown>>(initialData || {});
   const [relations, setRelations] = useState<Record<string, RelationData[]>>({});
   const [relatedData, setRelatedData] = useState<Record<string, RelationData[]>>({});
 
-  // --- EFFECT: LOAD DROP-DOWN RELATIONS (schema-based) ---
   useEffect(() => {
     const schema = (TABLE_SCHEMAS as Record<string, SchemaField[]>)[tableName];
     if (!schema) return;
@@ -52,7 +52,6 @@ export default function DynamicIngressForm({ tableName, onSave, initialData }: D
     });
   }, [tableName]);
 
-  // --- EFFECT: FETCH RELATED DATA FOR _id FIELDS ---
   useEffect(() => {
     const fetchRelations = async () => {
       const schema = (TABLE_SCHEMAS as Record<string, SchemaField[]>)[tableName];
@@ -62,7 +61,7 @@ export default function DynamicIngressForm({ tableName, onSave, initialData }: D
       const data: Record<string, RelationData[]> = {};
       
       for (const field of relFields) {
-        const tableNameRel = field.name.replace('_id', 's'); // e.g. sector_id -> sectors
+        const tableNameRel = field.name.replace('_id', 's');
         try {
           const response = await fetch(`/api/db/${tableNameRel}`); 
           const result = await response.json();
@@ -79,9 +78,7 @@ export default function DynamicIngressForm({ tableName, onSave, initialData }: D
     fetchRelations();
   }, [tableName]);
 
-  // --- HELPER: RENDER FIELD BASED ON TYPE ---
   const renderField = (field: SchemaField) => {
-    // Dropdown logic for fields ending in _id (auto-fetched relations)
     if (field.name.endsWith('_id') && field.name !== 'id') {
       return (
         <select
@@ -99,19 +96,18 @@ export default function DynamicIngressForm({ tableName, onSave, initialData }: D
       );
     }
 
-    // Existing schema-based rendering for other field types
     if (field.type === 'relation') {
       return (
         <select 
           className="bg-black border border-slate-700 p-3 text-sm w-full focus:border-[#4A90E2] outline-none text-white"
           value={(formData[field.name] as string | number) || ""}
           onChange={(e) => {
-  const val = e.target.value;
-  setFormData({ 
-    ...formData, 
-    [field.name]: val === "" ? null : parseInt(val, 10) 
-  });
-}}
+            const val = e.target.value;
+            setFormData({ 
+              ...formData, 
+              [field.name]: val === "" ? null : parseInt(val, 10) 
+            });
+          }}
         >
           <option value="">Select {field.table}...</option>
           {field.table && relations[field.table]?.map((item) => (
@@ -133,7 +129,6 @@ export default function DynamicIngressForm({ tableName, onSave, initialData }: D
       );
     }
 
-    // Default: text/date input
     return (
       <input 
         type={field.type} 
@@ -151,7 +146,6 @@ export default function DynamicIngressForm({ tableName, onSave, initialData }: D
   return (
     <form className="grid grid-cols-1 md:grid-cols-2 gap-6" onSubmit={(e) => e.preventDefault()}>
       {schema.map((field) => {
-        // Skip system fields
         if (field.name === 'id' || field.name === 'created_at') return null;
         
         return (

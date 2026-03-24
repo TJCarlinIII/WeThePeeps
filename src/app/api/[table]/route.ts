@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getRequestContext } from '@cloudflare/next-on-pages';
+export const dynamic = "force-dynamic";
 
-// Using force-dynamic to ensure OpenNext handles the Cloudflare context correctly
-export const dynamic = 'force-dynamic';
+import { NextRequest, NextResponse } from 'next/server';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 interface Env {
   DB: D1Database;
@@ -18,10 +17,9 @@ function isTableAllowed(table: string): boolean {
   return ALLOWED_TABLES.includes(table);
 }
 
-// GET: Fetch all rows
 export async function GET(request: NextRequest, context: RouteContext) {
-  const env = getRequestContext().env as unknown as Env;
-  const db = env.DB;
+  const { env } = await getCloudflareContext({ async: true });
+  const db = (env as unknown as Env).DB;
   const { table } = await context.params;
 
   if (!isTableAllowed(table)) {
@@ -37,10 +35,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 }
 
-// POST: Add a new row
 export async function POST(request: NextRequest, context: RouteContext) {
-  const env = getRequestContext().env as unknown as Env;
-  const db = env.DB;
+  const { env } = await getCloudflareContext({ async: true });
+  const db = (env as unknown as Env).DB;
   const { table } = await context.params;
 
   if (!isTableAllowed(table)) {
@@ -50,9 +47,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const body = (await request.json()) as Record<string, unknown>;
     
-    // We omit 'id' and 'created_at' from the spread to avoid inserting into 
-    // auto-generated columns, using the underscore-only pattern which most 
-    // linters ignore, or simply omitting them from the keys entirely.
     const { id: _, created_at: __, ...cleanData } = body;
     
     const keys = Object.keys(cleanData);
@@ -75,10 +69,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 }
 
-// PATCH: Update an existing row
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const env = getRequestContext().env as unknown as Env;
-  const db = env.DB;
+  const { env } = await getCloudflareContext({ async: true });
+  const db = (env as unknown as Env).DB;
   const { table } = await context.params;
 
   if (!isTableAllowed(table)) {
@@ -88,7 +81,6 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
     const body = (await request.json()) as { id: string | number } & Record<string, unknown>;
     
-    // Extract ID for the WHERE clause, omit created_at from the UPDATE data
     const { id, created_at: _, ...data } = body;
 
     if (!id) {
@@ -114,10 +106,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 }
 
-// DELETE: Remove a row
 export async function DELETE(request: NextRequest, context: RouteContext) {
-  const env = getRequestContext().env as unknown as Env;
-  const db = env.DB;
+  const { env } = await getCloudflareContext({ async: true });
+  const db = (env as unknown as Env).DB;
   const { table } = await context.params;
 
   if (!isTableAllowed(table)) {

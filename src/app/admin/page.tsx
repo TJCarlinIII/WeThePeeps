@@ -1,5 +1,7 @@
-// src/app/admin/page.tsx
 "use client";
+
+export const dynamic = "force-dynamic";
+
 import React from 'react';
 import Link from 'next/link';
 
@@ -10,7 +12,7 @@ const TABLES = [
   { id: 'media', label: 'Evidence/Media', icon: '📎' },
   { id: 'statutes', label: 'Legal Statutes (MCL)', icon: '⚖️' },
   { id: 'content', label: 'Long-form Articles', icon: '📝' },
-  { id: 'sectors', label: 'Sectors', icon: '📂' }, // NEW CARD
+  { id: 'sectors', label: 'Sectors', icon: '📂' },
 ];
 
 export default function AdminHub() {

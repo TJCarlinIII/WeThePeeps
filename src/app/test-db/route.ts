@@ -1,14 +1,12 @@
-import { NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
 
-export const dynamic = 'force-dynamic';
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    // Import from @opennextjs/cloudflare to match your successful actions.ts
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-    const ctx = await getCloudflareContext();
+    const ctx = await getCloudflareContext({ async: true });
     
-    // Type-safe environment access
     const env = ctx.env as Record<string, unknown>;
     const db = env.DB as D1Database;
 
@@ -19,7 +17,6 @@ export async function GET() {
       }, { status: 500 });
     }
 
-    // List tables to confirm D1 access
     const { results } = await db.prepare(
       "SELECT name FROM sqlite_master WHERE type='table'"
     ).all();

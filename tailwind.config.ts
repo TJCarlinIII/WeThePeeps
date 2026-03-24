@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
-import tailwindAnimate from "tailwindcss-animate"; // Move the import here
+import tailwindAnimate from "tailwindcss-animate";
+import typography from "@tailwindcss/typography";
 
 const config: Config = {
   darkMode: ["class"],
@@ -18,19 +19,24 @@ const config: Config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         accent: {
-          DEFAULT: "#4A90E2", // Your high-tech blue hex
+          DEFAULT: "#4A90E2",
           foreground: "hsl(var(--accent-foreground))",
         },
+        // Additional custom color from first snippet
+        peepsBlue: "#4A90E2",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "Georgia", "serif"],
         heading: ["var(--font-heading)", "Georgia", "serif"],
         brand: ["var(--font-heading)", "Georgia", "serif"],
         mono: ["var(--font-mono)", "Consolas", "monospace"],
+        // Additional fonts from first snippet
+        libre: ["var(--font-libre)", "serif"],
+        lora: ["var(--font-lora)", "serif"],
       },
     },
   },
-  plugins: [tailwindAnimate], // Use the imported variable here
+  plugins: [tailwindAnimate, typography],
 };
 
 export default config;

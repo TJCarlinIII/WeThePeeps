@@ -1,4 +1,5 @@
-// src/app/admin/layout.tsx
+export const dynamic = "force-dynamic";
+
 import AdminGuard from '@/components/admin/AdminGuard';
 
 export default function AdminLayout({

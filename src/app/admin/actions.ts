@@ -9,7 +9,6 @@ interface Env {
 }
 
 export async function authenticateAdmin(passphrase: string) {
-  // Accessing env directly for simple string comparison
   const correctPassphrase = process.env.ADMIN_PASSPHRASE;
 
   if (passphrase === correctPassphrase) {
@@ -28,7 +27,7 @@ export async function authenticateAdmin(passphrase: string) {
 
 export async function getEvidenceRecords() {
   const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-  const ctx = await getCloudflareContext();
+  const ctx = await getCloudflareContext({ async: true });
   const db = (ctx.env as unknown as Env).DB; 
 
   try {
@@ -44,7 +43,7 @@ export async function getEvidenceRecords() {
 
 export async function toggleEvidenceCritical(id: number, currentStatus: number) {
   const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-  const ctx = await getCloudflareContext();
+  const ctx = await getCloudflareContext({ async: true });
   const db = (ctx.env as unknown as Env).DB;
 
   const newStatus = currentStatus === 1 ? 0 : 1;
@@ -63,7 +62,7 @@ export async function toggleEvidenceCritical(id: number, currentStatus: number) 
 
 export async function deleteEvidenceRecord(id: number) {
   const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-  const ctx = await getCloudflareContext();
+  const ctx = await getCloudflareContext({ async: true });
   const db = (ctx.env as unknown as Env).DB;
 
   try {
@@ -77,7 +76,7 @@ export async function deleteEvidenceRecord(id: number) {
 
 export async function getPublicEvidence(id: string) {
   const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-  const ctx = await getCloudflareContext();
+  const ctx = await getCloudflareContext({ async: true });
   const db = (ctx.env as unknown as Env).DB;
 
   try {
@@ -95,7 +94,7 @@ export async function getPublicEvidence(id: string) {
 export async function getHierarchy() {
   try {
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-    const ctx = await getCloudflareContext();
+    const ctx = await getCloudflareContext({ async: true });
     const db = (ctx.env as unknown as Env).DB;
 
     const { results } = await db.prepare(

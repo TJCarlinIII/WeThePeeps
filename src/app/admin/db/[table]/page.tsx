@@ -1,19 +1,16 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-// Fix: Ensure this path matches your folder structure exactly 
-// (e.g., src/components/admin/DynamicIngressForm.tsx)
 import DynamicIngressForm from '@/components/admin/DynamicIngressForm';
-// Import the AdminGuard component for route protection
 import AdminGuard from '@/components/admin/AdminGuard';
 
-// Fix: params must be typed as a Promise in Next.js 15
 interface TablePageProps {
   params: Promise<{ table: string }>;
 }
 
-// Define a generic type for our database rows to avoid 'any'
 interface DbRow {
   id: number;
   name?: string;
@@ -24,20 +21,14 @@ interface DbRow {
 }
 
 export default function TableManager(props: TablePageProps) {
-  // Fix: Unwrap the async params using React.use()
   const params = use(props.params);
   const tableName = params.table;
 
-  // --- STATE ---
   const [rows, setRows] = useState<DbRow[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedRow, setSelectedRow] = useState<DbRow | null>(null);
-  
-  // Commented out 'status' until we add the visual loading spinner to avoid ESLint errors
-  // const [status, setStatus] = useState({ type: '', msg: '' });
 
-  // --- DATA LOADING ---
   useEffect(() => {
     const fetchRows = async () => {
       try {
@@ -50,8 +41,6 @@ export default function TableManager(props: TablePageProps) {
     };
     fetchRows();
   }, [tableName]);
-
-  // --- LOGIC FUNCTIONS ---
 
   const handlePurge = async () => {
     if (!selectedId) return alert("Select a record first.");
@@ -84,8 +73,6 @@ export default function TableManager(props: TablePageProps) {
   };
 
   const handleSave = async (formData: Record<string, unknown>) => {
-    // setStatus({ type: 'loading', msg: 'COMMITTING_TO_D1...' });
-    
     const method = isEditing ? 'PATCH' : 'POST';
     const payload = isEditing ? { ...formData, id: selectedId } : formData;
 
@@ -123,7 +110,7 @@ export default function TableManager(props: TablePageProps) {
           </h3>
           
           <DynamicIngressForm 
-            key={isEditing ? `edit-${selectedId}` : 'new-entry'} // Forces a reset when switching modes
+            key={isEditing ? `edit-${selectedId}` : 'new-entry'} 
             tableName={tableName} 
             onSave={handleSave} 
             initialData={isEditing ? selectedRow : null} 
