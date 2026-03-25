@@ -25,7 +25,6 @@ export default async function EvidenceDetailPage({ params }: { params: Promise<{
   const context = await getCloudflareContext({ async: true });
   const env = (context.env as unknown) as CloudflareEnv;
 
-  // Fully joined query to get the rich record details required by the page
   const evidence = await env.DB.prepare(`
     SELECT 
       i.id, 
@@ -48,8 +47,35 @@ export default async function EvidenceDetailPage({ params }: { params: Promise<{
 
   if (!evidence) notFound();
 
+  // --- SCHEMA GENERATION ---
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Report',
+    headline: evidence.title,
+    author: {
+      '@type': 'Organization',
+      name: 'We The Peeps',
+    },
+    datePublished: evidence.created_at,
+    description: evidence.content?.substring(0, 160),
+    about: {
+      '@type': 'Person',
+      name: evidence.official
+    },
+    associatedMedia: evidence.fileUrl ? {
+      '@type': 'MediaObject',
+      contentUrl: evidence.fileUrl
+    } : undefined
+  };
+
   return (
     <main className="min-h-screen bg-black text-white p-8 md:p-20 font-mono">
+      {/* STRUCTURED DATA */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <div className="max-w-4xl mx-auto">
         <Link href="/evidence" className="text-[#4A90E2] text-[10px] font-bold uppercase tracking-widest hover:underline mb-12 inline-block">
           &lt;&lt; Return_To_Manifest
@@ -75,7 +101,7 @@ export default async function EvidenceDetailPage({ params }: { params: Promise<{
               {evidence.title}
             </h1>
             <div className="mt-6 text-slate-500 text-xs font-bold uppercase tracking-widest">
-              Subject: <span className="text-white">{evidence.official || "Unidentified"}</span> {/* Metadata Separator */} Entered: {evidence.created_at ? new Date(evidence.created_at).toLocaleDateString() : "Date Pending"}
+              Subject: <span className="text-white">{evidence.official || "Unidentified"}</span> | Entered: {evidence.created_at ? new Date(evidence.created_at).toLocaleDateString() : "Date Pending"}
             </div>
           </header>
 

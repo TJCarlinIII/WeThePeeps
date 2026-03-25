@@ -13,6 +13,9 @@ interface ActorProfile {
   entity_id: number;
   agency_name?: string;
   bio?: string;
+  // Adding these for the schema
+  official_website_url?: string;
+  social_media_url?: string;
 }
 
 interface AssociatedEvidence {
@@ -39,7 +42,6 @@ export default async function SubjectProfile({ params }: { params: Promise<{ slu
 
   if (!actor) return notFound();
 
-  // Updated query mapping directly to incidents schema
   const { results: evidence } = await env.DB.prepare(`
     SELECT 
       id, 
@@ -52,8 +54,32 @@ export default async function SubjectProfile({ params }: { params: Promise<{ slu
     ORDER BY event_date DESC
   `).bind(actor.id).all<AssociatedEvidence>();
 
+  // --- SCHEMA GENERATION ---
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: actor.full_name,
+    jobTitle: actor.job_title,
+    affiliation: {
+      '@type': 'Organization',
+      name: actor.agency_name || 'Redford Township',
+    },
+    description: `Evidence-backed whistleblower report regarding ${actor.full_name}'s history and public records.`,
+    url: `https://wethepeeps.net/actor/${actor.slug}`,
+    sameAs: [
+      actor.official_website_url,
+      actor.social_media_url
+    ].filter(Boolean) // This removes undefined links
+  };
+
   return (
     <main className="min-h-screen bg-black text-slate-300 font-mono">
+      {/* Injecting Schema into the page body */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <header className="border-b border-slate-900 bg-slate-950/50 p-8 md:p-16">
         <Link href="/actors" className="text-[#4A90E2] text-[10px] font-bold uppercase tracking-widest hover:underline mb-12 inline-block">
           &lt;&lt; Return_To_Personnel

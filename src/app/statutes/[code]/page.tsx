@@ -13,6 +13,11 @@ interface EvidenceRecord {
   created_at: string;
 }
 
+interface Statute {
+  code: string;
+  description?: string;
+}
+
 async function getStatuteData(code: string) {
   const decodedCode = decodeURIComponent(code);
   const context = await getCloudflareContext({ async: true });
@@ -21,13 +26,18 @@ async function getStatuteData(code: string) {
 
   const statute = await db.prepare("SELECT * FROM statutes WHERE code = ?")
     .bind(decodedCode)
-    .first<{ code: string }>();
+    .first<Statute>();
   
   if (!statute) return null;
 
-  const { results: incidents } = await db.prepare(
-    "SELECT id, title, official, isCritical, created_at FROM evidence WHERE statute = ? ORDER BY created_at DESC"
-  ).bind(decodedCode).all() as { results: EvidenceRecord[] };
+  // Note: Using 'incidents' table to match your recent database refactor
+  const { results: incidents } = await db.prepare(`
+    SELECT i.id, i.title, a.full_name as official, i.is_critical as isCritical, i.event_date as created_at 
+    FROM incidents i
+    LEFT JOIN actors a ON i.actor_id = a.id
+    WHERE i.statute_citations LIKE ? 
+    ORDER BY i.event_date DESC
+  `).bind(`%${decodedCode}%`).all() as { results: EvidenceRecord[] };
 
   return { statute, incidents };
 }
@@ -38,8 +48,31 @@ export default async function StatuteDetailPage({ params }: { params: Promise<{ 
 
   if (!data) notFound();
 
+  // --- SCHEMA GENERATION ---
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Legislation',
+    name: `MCL ${data.statute.code}`,
+    identifier: data.statute.code,
+    jurisdiction: 'Michigan, USA',
+    description: `Public record of incidents and accountability reports citing Michigan Compiled Law ${data.statute.code}.`,
+    url: `https://wethepeeps.net/statutes/${encodeURIComponent(data.statute.code)}`,
+    // Link the incidents as creative works that cite this legislation
+    citation: data.incidents.map(item => ({
+      '@type': 'CreativeWork',
+      headline: item.title,
+      url: `https://wethepeeps.net/evidence/${item.id}`
+    }))
+  };
+
   return (
     <div className="min-h-screen bg-black p-8 md:p-20 font-sans">
+      {/* STRUCTURED DATA INJECTION */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <div className="max-w-5xl mx-auto">
         <Link href="/statutes" className="text-[#4A90E2] font-mono text-[10px] font-bold uppercase tracking-widest hover:underline mb-8 inline-block">
           &lt;&lt; Back_To_Codex
@@ -69,11 +102,13 @@ export default async function StatuteDetailPage({ params }: { params: Promise<{ 
                 className="group flex flex-col md:flex-row md:items-center justify-between p-6 border border-slate-900 bg-slate-900/5 hover:border-[#4A90E2]/40 transition-all hover:bg-[#4A90E2]/5"
               >
                 <div>
-                  <span className="text-slate-500 text-[9px] font-bold uppercase tracking-widest block mb-1">Subject: {item.official}</span>
+                  <span className="text-slate-500 text-[9px] font-bold uppercase tracking-widest block mb-1">Subject: {item.official || 'Unknown_Actor'}</span>
                   <h4 className="text-white text-lg font-bold group-hover:text-[#4A90E2] transition-colors uppercase tracking-tight">{item.title}</h4>
                 </div>
                 <div className="mt-4 md:mt-0 text-left md:text-right border-t md:border-t-0 border-slate-900 pt-4 md:pt-0">
-                  <div className="text-[10px] text-slate-600 font-mono mb-1">{new Date(item.created_at).toLocaleDateString()}</div>
+                  <div className="text-[10px] text-slate-600 font-mono mb-1">
+                    {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'DATE_UNAVAILABLE'}
+                  </div>
                   <span className="text-[#4A90E2] text-[10px] font-black uppercase italic group-hover:translate-x-1 transition-transform inline-block">
                     View_File_Details →
                   </span>

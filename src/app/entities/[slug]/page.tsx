@@ -10,6 +10,7 @@ interface EntityProfile {
   sector: string;
   description: string;
   slug: string;
+  sector_id: number;
 }
 
 interface AssociatedActor {
@@ -61,8 +62,37 @@ export default async function EntityProfilePage({ params }: { params: Promise<{ 
   const actors = actorsRes.results;
   const recentEvidence = evidenceRes.results;
 
+  // --- SCHEMA GENERATION ---
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'GovernmentOrganization',
+    name: entity.name,
+    description: entity.description || `Whistleblower evidence and personnel registry for ${entity.name}.`,
+    url: `https://wethepeeps.net/entities/${entity.slug}`,
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Redford',
+      addressRegion: 'MI',
+    },
+    subjectOf: recentEvidence.map(log => ({
+      '@type': 'Report',
+      headline: log.title,
+      datePublished: log.created_at,
+      author: {
+        '@type': 'Person',
+        name: log.official
+      }
+    }))
+  };
+
   return (
     <main className="min-h-screen bg-black text-slate-300 font-mono">
+      {/* SE0 STRUCTURED DATA */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <header className="border-b border-[#4A90E2]/20 bg-slate-900/10 p-10 md:p-20 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-10 font-black text-7xl select-none uppercase">
           {entity.sector}
@@ -134,7 +164,7 @@ export default async function EntityProfilePage({ params }: { params: Promise<{ 
           ) : (
             <div className="space-y-6">
               {actors.map((person) => (
-                <Link key={person.id} href={`/actors/${person.slug || encodeURIComponent(person.full_name)}`} className="block group">
+                <Link key={person.id} href={`/actor/${person.slug || encodeURIComponent(person.full_name)}`} className="block group">
                   <h4 className="text-sm font-bold text-white group-hover:text-[#4A90E2] transition-colors uppercase tracking-tight">
                     {person.full_name}
                   </h4>

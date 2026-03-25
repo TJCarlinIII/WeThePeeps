@@ -15,6 +15,8 @@ interface Subject {
   slug: string;
   job_title: string;
   org_name: string;
+  // Added for Schema
+  official_website_url?: string;
 }
 
 interface EvidenceItem {
@@ -39,7 +41,6 @@ async function getDossierData(accountabilityslug: string) {
     return null;
   }
 
-  // Updated query using the new actors and entities tables
   const subject = await db.prepare(`
     SELECT a.*, e.name as org_name 
     FROM actors a 
@@ -49,7 +50,6 @@ async function getDossierData(accountabilityslug: string) {
 
   if (!subject) return null;
 
-  // Updated query using the incidents table
   const { results: evidence } = await db.prepare(`
     SELECT * FROM incidents 
     WHERE actor_id = ? 
@@ -67,8 +67,35 @@ export default async function DossierProfile({ params }: PageProps) {
 
   const { subject, evidence } = data;
 
+  // --- SCHEMA GENERATION ---
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: subject.full_name,
+    jobTitle: subject.job_title,
+    affiliation: {
+      '@type': 'Organization',
+      name: subject.org_name || 'Redford Township',
+    },
+    identifier: `WTP-REF-${subject.id.toString().padStart(4, '0')}`,
+    url: `https://wethepeeps.net/accountability/${subject.slug}`,
+    sameAs: subject.official_website_url ? [subject.official_website_url] : [],
+    subjectOf: evidence.map(item => ({
+      '@type': 'Report',
+      headline: item.title,
+      datePublished: item.event_date,
+      description: item.description.substring(0, 160), // Short snippet for Google
+    }))
+  };
+
   return (
     <div className="min-h-screen bg-black text-white font-mono p-4 md:p-12">
+      {/* STRUCTURED DATA INJECTION */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <div className="max-w-5xl mx-auto border border-[#4A90E2]/20 bg-slate-900/10 p-6 md:p-10 rounded-sm shadow-2xl">
         
         <header className="border-b border-[#4A90E2]/40 pb-8 mb-12 flex flex-col md:flex-row justify-between items-start gap-6">

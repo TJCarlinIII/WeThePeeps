@@ -10,6 +10,18 @@ interface EntityNode {
   sector: string;
 }
 
+export const metadata = {
+  title: "WTP_CORE | Whistleblower Evidence & True Crime Database",
+  description: "A whistleblower-driven, evidence-backed database documenting systemic failures and true crime reports. Access the primary manifest for Redford Township and beyond.",
+  keywords: [
+    "Redford Township Whistleblower", 
+    "True Crime Evidence Database", 
+    "Government Accountability Michigan", 
+    "Evidence-Backed Investigations",
+    "WTP Transparency Project"
+  ],
+};
+
 export default async function LandingPage() {
   let randomEntities: EntityNode[] = [];
   try {
