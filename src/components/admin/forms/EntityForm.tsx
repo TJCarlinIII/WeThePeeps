@@ -1,8 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 
-// Added 'export' here so other files can use this exact definition
-export interface Entity {
+interface Entity {
   id?: number;
   name: string;
   sector_id: string | number;

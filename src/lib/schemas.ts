@@ -33,16 +33,16 @@ export const TABLE_SCHEMAS: Record<string, SchemaField[]> = {
     { name: 'category', label: 'Category', type: 'text' },
     { name: 'description', label: 'Description', type: 'textarea' }
   ],
-  incidents: [
-    { name: 'title', label: 'Incident Heading', type: 'text', required: true },
-    { name: 'description', label: 'Incident Narrative', type: 'textarea', required: true },
-    { name: 'actor_id', label: 'Primary Actor', type: 'relation', table: 'actors' },
-    { name: 'entity_id', label: 'Involved Entity', type: 'relation', table: 'entities' },
-    { name: 'statute_id', label: 'Relevant Statute', type: 'relation', table: 'statutes' },
-    { name: 'status', label: 'Current Status', type: 'select', options: ['pending', 'verified', 'archived'] },
-    { name: 'is_critical', label: 'Flag Critical?', type: 'select', options: ['0', '1'] },
-    { name: 'event_date', label: 'Date of Occurrence', type: 'date' }
-  ],
+    incidents: [
+        { name: 'title', label: 'Incident Heading', type: 'text', required: true },
+        { name: 'description', label: 'Incident Narrative', type: 'textarea', required: true },
+        { name: 'actor_id', label: 'Primary Actor', type: 'relation', table: 'actors' },
+        { name: 'entity_id', label: 'Involved Entity', type: 'relation', table: 'entities' },
+        { name: 'statute_id', label: 'Relevant Statute', type: 'relation', table: 'statutes' },
+        { name: 'status', label: 'Current Status', type: 'select', options: ['pending', 'verified', 'archived'] },
+        { name: 'is_critical', label: 'Flag Critical?', type: 'select', options: ['0', '1'] },
+        { name: 'event_date', label: 'Date of Occurrence', type: 'date' }
+      ],
   posts: [
     { name: 'title', label: 'Post Title', type: 'text', required: true },
     { name: 'slug', label: 'URL Slug', type: 'text', required: true },
