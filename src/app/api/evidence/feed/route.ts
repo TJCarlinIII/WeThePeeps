@@ -1,36 +1,50 @@
-export const dynamic = "force-dynamic";
+import { NextRequest, NextResponse } from "next/server";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
-
-interface CloudflareEnv {
+interface Env {
   DB: D1Database;
 }
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const search = searchParams.get('q') || '';
+/**
+ * GET: Fetches a list of the latest incidents with joined metadata
+ * Supports an optional ?limit=X query parameter
+ */
+export async function GET(req: NextRequest) {
+  const ctx = await getCloudflareContext({ async: true });
+  const db = (ctx.env as unknown as Env).DB;
   
-  const { env } = await getCloudflareContext({ async: true });
-  const db = (env as unknown as CloudflareEnv).DB;
+  const { searchParams } = new URL(req.url);
+  const limit = parseInt(searchParams.get("limit") || "10", 10);
 
   try {
-    // This query pulls the evidence and counts how many rebuttals exist for it
-    const query = `
-      SELECT e.*, 
-      (SELECT COUNT(*) FROM evidence_relations WHERE source_id = e.id AND relation_type = 'REFUTES') as rebuttal_count
-      FROM evidence e
-      WHERE e.description LIKE ?
-      ORDER BY e.id DESC
-    `;
-    
-    const { results } = await db.prepare(query)
-      .bind(`%${search}%`)
+    const { results } = await db
+      .prepare(`
+        SELECT 
+          i.id,
+          i.title,
+          i.slug,
+          i.description,
+          i.event_date,
+          i.is_critical,
+          a.full_name as actor_name,
+          e.name as entity_name,
+          s.title as statute_title
+        FROM incidents i
+        LEFT JOIN actors a ON i.actor_id = a.id
+        LEFT JOIN entities e ON i.entity_id = e.id
+        LEFT JOIN statutes s ON i.statute_id = s.id
+        ORDER BY i.event_date DESC, i.created_at DESC
+        LIMIT ?
+      `)
+      .bind(limit)
       .all();
 
-    return NextResponse.json({ results: results || [] });
-  } catch (err) {
-    console.error("FEED_FETCH_ERROR:", err);
-    return NextResponse.json({ error: "DATABASE_ERROR" }, { status: 500 });
+    return NextResponse.json({ feed: results });
+  } catch (error) {
+    console.error("D1_FEED_ERROR:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch evidence feed" }, 
+      { status: 500 }
+    );
   }
 }

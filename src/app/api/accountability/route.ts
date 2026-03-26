@@ -1,13 +1,14 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { NextResponse } from "next/server";
-import type { D1Database } from "@cloudflare/workers-types";
 
-// REMOVED: export const runtime = "edge";
+interface Env {
+  DB: D1Database;
+}
 
 export async function GET() {
   try {
     const context = await getCloudflareContext({ async: true });
-    const db = (context.env as unknown as { DB: D1Database }).DB;
+    const db = (context.env as unknown as Env).DB;
 
     if (!db) {
       return NextResponse.json({ error: "DB_CONNECTION_LOST" }, { status: 500 });
@@ -20,14 +21,17 @@ export async function GET() {
         a.job_title, 
         a.status, 
         a.slug,
-        e.name AS agency_name,
+        a.seo_description,
+        e.name AS entity_name,
+        e.sector_id,
         (SELECT COUNT(*) FROM incidents WHERE actor_id = a.id) as incident_count
       FROM actors a
       LEFT JOIN entities e ON a.entity_id = e.id
-      ORDER BY a.full_name ASC
+      ORDER BY incident_count DESC, a.full_name ASC
     `).all();
 
-    return NextResponse.json(results);
+    // Standardized response object
+    return NextResponse.json({ results: results || [] });
   } catch (error) {
     console.error("ACCOUNTABILITY_API_ERROR:", error);
     return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });

@@ -1,84 +1,96 @@
+import { NextRequest, NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 interface Env {
   DB: D1Database;
 }
 
-// Define the shape of the incoming request to satisfy TS
 interface IncidentBody {
+  id?: number;
   title: string;
+  slug: string; // CRITICAL: Added for SEO/Routing
   description: string;
   actor_id?: number | null;
   entity_id?: number | null;
+  sector_id?: number | null; // NEW: Added to match schema
   statute_id?: number | null;
   status?: string;
   is_critical?: number;
   event_date?: string;
+  seo_description?: string;
+  seo_keywords?: string;
 }
 
-export async function POST(request: Request) {
+const getDB = async () => {
+  const ctx = await getCloudflareContext({ async: true });
+  return (ctx.env as unknown as Env).DB;
+};
+
+// 1. GET: Comprehensive list for Admin/Feed
+export async function GET() {
+  const db = await getDB();
   try {
-    const context = await getCloudflareContext();
-    const env = context.env as unknown as Env;
-    
-    // Cast the JSON body to our interface
+    const { results } = await db.prepare(`
+      SELECT 
+        i.*, 
+        a.full_name as actor_name, 
+        e.name as entity_name
+      FROM incidents i
+      LEFT JOIN actors a ON i.actor_id = a.id
+      LEFT JOIN entities e ON i.entity_id = e.id
+      ORDER BY i.event_date DESC, i.created_at DESC
+    `).all();
+
+    return NextResponse.json({ results: results || [] });
+  } catch (err) {
+    console.error("INCIDENT_GET_FAILURE:", err);
+    return NextResponse.json([], { status: 500 });
+  }
+}
+
+// 2. POST: Complete Ingress with SEO and Slugs
+export async function POST(request: Request) {
+  const db = await getDB();
+  try {
     const body = (await request.json()) as IncidentBody;
 
     const {
       title,
+      slug,
       description,
       actor_id = null,
       entity_id = null,
+      sector_id = null,
       statute_id = null,
       status = 'pending',
       is_critical = 0,
-      event_date
+      event_date,
+      seo_description = null,
+      seo_keywords = null
     } = body;
 
-    if (!title || !description) {
-      return Response.json({ error: "Required: title/description" }, { status: 400 });
+    if (!title || !slug || !description) {
+      return NextResponse.json({ error: "Missing: title, slug, or description" }, { status: 400 });
     }
 
-    const result = await env.DB.prepare(`
+    const result = await db.prepare(`
       INSERT INTO incidents (
-        title, description, actor_id, entity_id, statute_id, status, is_critical, event_date
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        title, slug, description, actor_id, entity_id, sector_id, 
+        statute_id, status, is_critical, event_date, seo_description, seo_keywords
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     .bind(
-      title, description, actor_id, entity_id, statute_id, 
-      status, is_critical, event_date || new Date().toISOString()
+      title, slug, description, actor_id, entity_id, sector_id,
+      statute_id, status, is_critical, 
+      event_date || new Date().toISOString(),
+      seo_description, seo_keywords
     )
     .run();
 
-    return Response.json({ success: true, id: result.meta.last_row_id });
+    return NextResponse.json({ success: true, id: result.meta.last_row_id });
 
   } catch (err) {
     console.error("INCIDENT_POST_FAILURE:", err);
-    return Response.json({ error: "D1_INGRESS_FAILURE" }, { status: 500 });
-  }
-}
-
-export async function GET() {
-  try {
-    const context = await getCloudflareContext();
-    const env = context.env as unknown as Env;
-
-    const { results } = await env.DB.prepare(`
-      SELECT 
-        i.title, 
-        i.event_date, 
-        a.full_name as actor, 
-        e.name as entity
-      FROM incidents i
-      LEFT JOIN actors a ON i.actor_id = a.id
-      LEFT JOIN entities e ON i.entity_id = e.id
-      WHERE i.is_critical = 1 AND i.status = 'verified'
-      ORDER BY i.event_date DESC
-      LIMIT 10
-    `).all();
-
-    return Response.json(results);
-  } catch {
-    return Response.json([], { status: 500 });
+    return NextResponse.json({ error: "D1_INGRESS_FAILURE" }, { status: 500 });
   }
 }
