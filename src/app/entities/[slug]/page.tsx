@@ -164,7 +164,7 @@ export default async function EntityProfilePage({ params }: { params: Promise<{ 
           ) : (
             <div className="space-y-6">
               {actors.map((person) => (
-                <Link key={person.id} href={`/actor/${person.slug || encodeURIComponent(person.full_name)}`} className="block group">
+                <Link key={person.id} href={`/actors/${person.slug || encodeURIComponent(person.full_name)}`} className="block group">
                   <h4 className="text-sm font-bold text-white group-hover:text-[#4A90E2] transition-colors uppercase tracking-tight">
                     {person.full_name}
                   </h4>

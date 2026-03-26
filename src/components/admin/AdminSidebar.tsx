@@ -6,12 +6,13 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
 const NAV_ITEMS = [
+  // New Taxonomy Item - Placed at the top
+  { id: 'taxonomy', label: 'TAXONOMY', icon: '🧬', customPath: '/admin/taxonomy' },
   { id: 'entities', label: 'ENTITIES', icon: '🏢' },
   { id: 'sectors', label: 'SECTORS', icon: '📂' },
   { id: 'posts', label: 'POSTS', icon: '📝' },
   { id: 'actors', label: 'ACTORS', icon: '👤' },
   { id: 'statutes', label: 'STATUTES', icon: '⚖️' },
-  // Changed id from 'media' to 'evidence' to match your folder structure
   { id: 'evidence', label: 'EVIDENCE', icon: '📎' }, 
 ];
 
@@ -45,7 +46,8 @@ export default function AdminSidebar() {
         <div className="h-px bg-slate-900 my-4 mx-2" />
 
         {NAV_ITEMS.map((item) => {
-          const href = `/admin/db/${item.id}`;
+          // Logic to handle our clean /admin/taxonomy path vs the /admin/ paths
+          const href = item.customPath ? item.customPath : `/admin/${item.id}`;
           const isActive = pathname === href;
 
           return (

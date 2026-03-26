@@ -1,3 +1,4 @@
+// File: src/app/admin/sectors/SectorRegistry.tsx
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -18,12 +19,9 @@ export function SectorRegistry() {
     setIsLoading(true);
     try {
       const res = await fetch('/api/sectors');
-      
-      // FIX: Explicitly cast the response to resolve the 'unknown' error
-      const data = (await res.json()) as { sectors: Sector[] };
-      
-      // FIX: Map from data.sectors to match the API response
-      const rowsData = data.sectors || []; 
+      // FIX: Map correctly from 'results' as per the API's JSON output structure
+      const data = (await res.json()) as { results: Sector[] };
+      const rowsData = data.results || []; 
       setSectors(rowsData);
     } catch (err) {
       console.error("FETCH_ERROR:", err);
@@ -93,7 +91,7 @@ export function SectorRegistry() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-          <div className="xl:col-span-5 bg-slate-950/50 border border-slate-800 p-6 rounded sticky top-8">
+          <div className="xl:col-span-5 bg-slate-950/50 border border-slate-800 p-6 rounded sticky top-8 h-fit">
             <h2 className="text-blue-500 text-[10px] font-black uppercase mb-6 tracking-widest">
               {isEditing ? `Modify_Sector [ID: ${selectedId}]` : 'Initialize_New_Sector'}
             </h2>

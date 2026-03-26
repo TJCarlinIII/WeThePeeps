@@ -9,8 +9,7 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
-  // We use a microtask or a simple timeout to ensure the state update 
-  // isn't considered "synchronous" by the strict linter.
+  // Ensure mounting is complete to avoid hydration mismatches
   useEffect(() => {
     const timer = setTimeout(() => {
       setMounted(true);
@@ -18,29 +17,25 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
     return () => clearTimeout(timer);
   }, []);
 
+  // Handle unauthorized access redirects
   useEffect(() => {
-    // Only attempt redirect after mounting and when loading is complete
     if (mounted && !isLoading && !isAuthenticated) {
-      router.push("/login");
+      // Redirecting to stylized admin login route
+      router.push("/admin/login"); 
     }
   }, [isAuthenticated, isLoading, router, mounted]);
 
-  // Loading state with dark-mode protection
+  // Loading state visual for secure session initialization
   if (!mounted || isLoading) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center font-mono text-slate-500">
         <span className="animate-pulse tracking-widest uppercase text-[10px]">
           Secure_Session_Init...
         </span>
-        <div className="mt-2 h-px w-12 bg-slate-900" />
       </div>
     );
   }
 
-  if (mounted && !isLoading && !isAuthenticated) {
-  router.push("/admin/login"); // Change this from "/login" to "/admin/login"
-  }
-
-  // Final check before rendering protected content
+  // Final validation: Render children only if authenticated
   return isAuthenticated ? <>{children}</> : null;
 }

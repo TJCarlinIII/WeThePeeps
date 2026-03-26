@@ -1,17 +1,28 @@
 "use client";
-import React, { useState } from 'react';
+
+import React, { useState, useMemo } from "react";
+import { slugify } from "@/lib/stringutils";
 
 export interface Actor {
   id?: number;
   full_name: string;
-  entity_id: string | number;
-  bio: string;
-  status: string;
+  entity_id: number;
   job_title: string;
+  status: 'active' | 'under_review' | 'former';
   slug: string;
+  bio?: string;
+  seo_description?: string;
+  seo_keywords?: string;
+  entity_name?: string;
 }
 
 interface Entity {
+  id: number;
+  name: string;
+  sector_id: number;
+}
+
+interface Sector {
   id: number;
   name: string;
 }
@@ -19,81 +30,166 @@ interface Entity {
 interface ActorFormProps {
   initialData?: Actor | null;
   entities: Entity[];
-  onSave: (data: Actor) => Promise<void> | void; // Allow async onSave
+  sectors: Sector[];
+  onSave: (data: Actor) => void;
 }
 
-export default function ActorForm({ initialData, entities, onSave }: ActorFormProps) {
-  const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState<Actor>({
-    full_name: '',
-    entity_id: '',
-    bio: '',
-    status: 'under_review',
-    job_title: '',
-    slug: '',
-    ...initialData
+export default function ActorForm({ initialData, entities, sectors, onSave }: ActorFormProps) {
+  // 1. Define the base/empty state
+  const emptyState: Actor = {
+    full_name: "",
+    entity_id: 0,
+    job_title: "",
+    status: "active",
+    slug: "",
+    bio: "",
+    seo_description: "",
+    seo_keywords: ""
+  };
+
+  // 2. Initialize state directly (Fixes ESLint react-hooks/set-state-in-effect)
+  const [formData, setFormData] = useState<Actor>(initialData || emptyState);
+  
+  // Initialize Sector ID based on the initial entity if editing
+  const [selectedSectorId, setSelectedSectorId] = useState<number>(() => {
+    if (initialData?.entity_id) {
+      const entity = entities.find(e => e.id === initialData.entity_id);
+      return entity ? entity.sector_id : 0;
+    }
+    return 0;
   });
 
-  const commonStyles = "bg-black border border-slate-700 p-3 text-sm w-full focus:border-[#4A90E2] outline-none text-white font-mono uppercase";
+  // 3. Bulletproof Filtering Logic
+  const filteredEntities = useMemo(() => {
+    // FAIL-SAFE: If no sector is selected, show all entities instead of an empty list
+    if (selectedSectorId === 0) return entities;
 
-  const handleNameChange = (val: string) => {
-    const slug = val.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
-    setFormData({ ...formData, full_name: val, slug });
+    // Filter by sector, using Number() to ensure type safety (string vs number comparison)
+    return entities.filter(e => Number(e.sector_id) === Number(selectedSectorId));
+  }, [entities, selectedSectorId]);
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value;
+    const slug = slugify(name);
+    setFormData(prev => ({ ...prev, full_name: name, slug }));
   };
 
-  const handleSaveClick = async () => {
-    setIsSaving(true);
-    try {
-      await onSave(formData);
-    } catch (err) {
-      console.error("FORM_SAVE_ERROR:", err);
-    } finally {
-      setIsSaving(false);
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
   };
+
+  const inputClass = "w-full bg-black border border-slate-800 p-2 text-xs text-white focus:border-blue-500 outline-none font-mono";
+  const labelClass = "block text-[9px] text-slate-500 uppercase mb-1 font-bold tracking-widest";
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="flex flex-col">
-        <label className="text-[10px] text-slate-500 font-bold mb-2 tracking-widest uppercase">Full Name</label>
-        <input className={commonStyles} value={formData.full_name} onChange={(e) => handleNameChange(e.target.value)} />
-      </div>
-
-      <div className="flex flex-col">
-        <label className="text-[10px] text-slate-500 font-bold mb-2 tracking-widest uppercase">Associated Entity</label>
-        <select className={commonStyles} value={formData.entity_id} onChange={(e) => setFormData({...formData, entity_id: e.target.value})}>
-          <option value="">-- SELECT_ENTITY --</option>
-          {entities.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* STEP 1: SECTOR FILTER */}
+      <div>
+        <label className={labelClass}>Step_1: Filter_by_Sector</label>
+        <select
+          value={selectedSectorId}
+          onChange={(e) => setSelectedSectorId(Number(e.target.value))}
+          className={inputClass}
+        >
+          <option value="0">-- SHOW ALL SECTORS --</option>
+          {sectors.map(s => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
         </select>
       </div>
 
-      <div className="flex flex-col">
-        <label className="text-[10px] text-slate-500 font-bold mb-2 tracking-widest uppercase">Job Title</label>
-        <input className={commonStyles} value={formData.job_title} onChange={(e) => setFormData({...formData, job_title: e.target.value})} />
-      </div>
-
-      <div className="flex flex-col">
-        <label className="text-[10px] text-slate-500 font-bold mb-2 tracking-widest uppercase">Current Status</label>
-        <select className={commonStyles} value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})}>
-          <option value="active">Active</option>
-          <option value="under_review">Under Review</option>
-          <option value="former">Former</option>
+      {/* STEP 2: AFFILIATED ENTITY */}
+      <div>
+        <label className={labelClass}>Step_2: Affiliated_Entity</label>
+        <select
+          value={formData.entity_id}
+          onChange={(e) => setFormData({ ...formData, entity_id: Number(e.target.value) })}
+          className={inputClass}
+          required
+        >
+          <option value="0">-- Select_Organization --</option>
+          {filteredEntities.map(e => (
+            <option key={e.id} value={e.id}>{e.name}</option>
+          ))}
         </select>
+        {filteredEntities.length === 0 && (
+          <p className="text-[8px] text-red-500 mt-1 uppercase font-bold animate-pulse">
+            Critical_Error: No_Entities_Found_In_This_Sector
+          </p>
+        )}
       </div>
 
-      <div className="flex flex-col md:col-span-2">
-        <label className="text-[10px] text-slate-500 font-bold mb-2 tracking-widest uppercase">Biography / Intel</label>
-        <textarea className={`${commonStyles} h-32 normal-case`} value={formData.bio} onChange={(e) => setFormData({...formData, bio: e.target.value})} />
+      <div>
+        <label className={labelClass}>Full_Name</label>
+        <input
+          type="text"
+          value={formData.full_name}
+          onChange={handleNameChange}
+          className={inputClass}
+          required
+        />
       </div>
 
-      <button 
-        type="button" 
-        disabled={isSaving}
-        onClick={handleSaveClick} 
-        className={`md:col-span-2 ${isSaving ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-[#4A90E2] hover:bg-white text-black'} py-4 font-black transition-all text-xs tracking-[0.3em] uppercase`}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={labelClass}>Current_Status</label>
+          <select
+            value={formData.status}
+            onChange={(e) => setFormData({ ...formData, status: e.target.value as Actor['status'] })}
+            className={inputClass}
+          >
+            <option value="active">Active</option>
+            <option value="under_review">Under Review</option>
+            <option value="former">Former</option>
+          </select>
+        </div>
+
+        <div>
+          <label className={labelClass}>Official_Title</label>
+          <input
+            type="text"
+            value={formData.job_title}
+            onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+            className={inputClass}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className={labelClass}>URL_Slug</label>
+        <input
+          type="text"
+          value={formData.slug}
+          onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+          className={`${inputClass} text-blue-400 border-dashed`}
+        />
+      </div>
+
+      <div>
+        <label className={labelClass}>Biography</label>
+        <textarea
+          value={formData.bio || ""}
+          onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+          className={`${inputClass} h-20 resize-none`}
+        />
+      </div>
+
+      <div className="pt-4 border-t border-slate-900">
+        <label className={`${labelClass} text-emerald-500`}>SEO_Description</label>
+        <textarea
+          value={formData.seo_description || ""}
+          onChange={(e) => setFormData({ ...formData, seo_description: e.target.value })}
+          className={`${inputClass} h-16 resize-none`}
+        />
+      </div>
+
+      <button
+        type="submit"
+        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 text-[10px] uppercase tracking-[0.3em]"
       >
-        {isSaving ? "SYNCING_DOSSIER..." : (initialData?.id ? "UPDATE_ACTOR_DOSSIER" : "COMMIT_NEW_ACTOR")}
+        Commit_Actor_Record
       </button>
-    </div>
+    </form>
   );
 }

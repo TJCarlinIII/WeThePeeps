@@ -1,14 +1,17 @@
 "use client";
-import React, { useState } from 'react';
 
-// Exported for the Manager Page
+import React, { useState } from "react";
+import { slugify } from "@/lib/stringutils";
+
 export interface Statute {
   id?: number;
-  citation: string;
   title: string;
+  citation: string;
+  slug: string;
   summary: string;
-  full_text: string;
-  jurisdiction: string;
+  legal_text: string;
+  seo_description?: string;
+  seo_keywords?: string;
 }
 
 interface StatuteFormProps {
@@ -17,66 +20,116 @@ interface StatuteFormProps {
 }
 
 export default function StatuteForm({ initialData, onSave }: StatuteFormProps) {
-  const [formData, setFormData] = useState<Statute>({
-    citation: '',
-    title: '',
-    summary: '',
-    full_text: '',
-    jurisdiction: 'FEDERAL',
-    ...initialData
-  });
+  // 1. Define the base/empty state
+  const emptyState: Statute = {
+    title: "",
+    citation: "",
+    slug: "",
+    summary: "",
+    legal_text: "",
+    seo_description: "",
+    seo_keywords: ""
+  };
 
-  const commonStyles = "bg-black border border-slate-700 p-3 text-sm w-full focus:border-[#4A90E2] outline-none text-white font-mono uppercase";
+  // 2. Initialize state directly (Eliminates cascading render error)
+  const [formData, setFormData] = useState<Statute>(initialData || emptyState);
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const title = e.target.value;
+    const slug = slugify(title);
+    setFormData(prev => ({ ...prev, title, slug }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  const inputClass = "w-full bg-black border border-slate-800 p-2 text-xs text-white focus:border-blue-500 outline-none transition-all font-mono";
+  const labelClass = "block text-[9px] text-slate-500 uppercase mb-1 font-bold tracking-widest";
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="flex flex-col">
-        <label className="text-[10px] text-slate-500 font-bold mb-2 tracking-widest uppercase">Citation (e.g. 18 U.S.C. § 241)</label>
-        <input 
-          className={commonStyles}
-          value={formData.citation}
-          onChange={(e) => setFormData({...formData, citation: e.target.value})}
-        />
-      </div>
-
-      <div className="flex flex-col">
-        <label className="text-[10px] text-slate-500 font-bold mb-2 tracking-widest uppercase">Jurisdiction</label>
-        <select 
-          className={commonStyles}
-          value={formData.jurisdiction}
-          onChange={(e) => setFormData({...formData, jurisdiction: e.target.value})}
-        >
-          <option value="FEDERAL">FEDERAL</option>
-          <option value="STATE">STATE</option>
-          <option value="INTERNATIONAL">INTERNATIONAL</option>
-        </select>
-      </div>
-
-      <div className="flex flex-col md:col-span-2">
-        <label className="text-[10px] text-slate-500 font-bold mb-2 tracking-widest uppercase">Statute Title</label>
-        <input 
-          className={commonStyles}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className={labelClass}>Statute_Title</label>
+        <input
+          type="text"
           value={formData.title}
-          onChange={(e) => setFormData({...formData, title: e.target.value})}
+          onChange={handleTitleChange}
+          className={inputClass}
+          required
+          placeholder="e.g. Freedom of Information Act"
         />
       </div>
 
-      <div className="flex flex-col md:col-span-2">
-        <label className="text-[10px] text-slate-500 font-bold mb-2 tracking-widest uppercase">Summary</label>
-        <textarea 
-          className={`${commonStyles} h-24 normal-case`}
+      <div>
+        <label className={labelClass}>Legal_Citation</label>
+        <input
+          type="text"
+          value={formData.citation}
+          onChange={(e) => setFormData({ ...formData, citation: e.target.value })}
+          className={inputClass}
+          required
+          placeholder="e.g. MCL 15.231"
+        />
+      </div>
+
+      <div>
+        <label className={labelClass}>URL_Slug (Auto-Generated)</label>
+        <input
+          type="text"
+          value={formData.slug}
+          onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+          className={`${inputClass} text-blue-400 border-dashed`}
+          required
+        />
+      </div>
+
+      <div>
+        <label className={labelClass}>Executive_Summary</label>
+        <textarea
           value={formData.summary}
-          onChange={(e) => setFormData({...formData, summary: e.target.value})}
+          onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+          className={`${inputClass} h-20 resize-none`}
+          placeholder="Brief overview of what this law mandates..."
+        />
+      </div>
+
+      <div>
+        <label className={labelClass}>Full_Legal_Text</label>
+        <textarea
+          value={formData.legal_text}
+          onChange={(e) => setFormData({ ...formData, legal_text: e.target.value })}
+          className={`${inputClass} h-48 resize-none text-[10px] leading-relaxed`}
+          placeholder="Paste the verbatim statute text here..."
+        />
+      </div>
+
+      <div className="border-t border-slate-900 pt-4">
+        <label className={`${labelClass} text-emerald-500`}>SEO_Description</label>
+        <textarea
+          value={formData.seo_description || ""}
+          onChange={(e) => setFormData({ ...formData, seo_description: e.target.value })}
+          className={`${inputClass} h-16 resize-none`}
+        />
+      </div>
+
+      <div>
+        <label className={`${labelClass} text-emerald-500`}>SEO_Keywords</label>
+        <input
+          type="text"
+          value={formData.seo_keywords || ""}
+          onChange={(e) => setFormData({ ...formData, seo_keywords: e.target.value })}
+          className={inputClass}
         />
       </div>
 
       <button 
-        type="button"
-        onClick={() => onSave(formData)}
-        className="md:col-span-2 bg-[#4A90E2] hover:bg-[#357ABD] text-black py-4 font-black transition-all text-xs tracking-[0.3em]"
+        type="submit" 
+        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 text-[10px] uppercase tracking-[0.3em]"
       >
-        {initialData?.id ? "UPDATE_STATUTE_RECORD" : "COMMIT_NEW_STATUTE"}
+        Commit_Statute_To_Record
       </button>
-    </div>
+    </form>
   );
 }

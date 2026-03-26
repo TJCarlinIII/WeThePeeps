@@ -6,9 +6,9 @@ export default function LogoMain({ className }: { className?: string }) {
     <div className={cn("flex flex-col items-center justify-center w-full max-w-2xl mx-auto", className)}>
       {/* The Main Flag Logo */}
       <h1 
-        className="text-6xl md:text-8xl font-black uppercase leading-none text-transparent bg-clip-text bg-cover bg-center tracking-tighter whitespace-nowrap select-none"
+        className="text-6xl md:text-8xl font-black uppercase leading-none text-transparent bg-clip-text bg-cover bg-center tracking-tighter whitespace-nowrap select-none will-change-transform"
         style={{ 
-          backgroundImage: 'url(/american-flag.jpg)',
+          backgroundImage: 'url(/american-flag.avif)', // Optimized AVIF file
           WebkitBackgroundClip: 'text',
         }}
       >

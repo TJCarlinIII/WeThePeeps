@@ -48,8 +48,8 @@ export async function GET() {
   }
 }
 
-// 2. POST: Complete Ingress with SEO and Slugs
-export async function POST(request: Request) {
+// 2. POST: Complete Ingress with SEO and Slugs – now using NextRequest
+export async function POST(request: NextRequest) {
   const db = await getDB();
   try {
     const body = (await request.json()) as IncidentBody;

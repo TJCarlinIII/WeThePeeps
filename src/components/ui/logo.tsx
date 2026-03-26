@@ -15,10 +15,10 @@ export default function Logo({
           // font-black matches the weight of your gold text
           // tracking-tighter creates that "Preamble" look
           // whitespace-nowrap prevents the text from breaking into two lines
-          "font-black uppercase leading-none text-transparent bg-clip-text bg-cover bg-center tracking-tighter whitespace-nowrap transition-all duration-300 select-none",
+          "font-black uppercase leading-none text-transparent bg-clip-text bg-cover bg-center tracking-tighter whitespace-nowrap transition-all duration-300 select-none will-change-transform",
         )}
         style={{ 
-          backgroundImage: 'url(/american-flag.jpg)',
+          backgroundImage: 'url(/american-flag.avif)', // Optimized AVIF file
           WebkitBackgroundClip: 'text',
         }}
       >
@@ -26,7 +26,7 @@ export default function Logo({
       </h1>
       
       {/* The small line was removed as requested, 
-         allowing the gold version in page.tsx to take center stage.
+          allowing the gold version in page.tsx to take center stage.
       */}
     </div>
   );

@@ -65,7 +65,7 @@ export default async function SubjectProfile({ params }: { params: Promise<{ slu
       name: actor.agency_name || 'Redford Township',
     },
     description: `Evidence-backed whistleblower report regarding ${actor.full_name}'s history and public records.`,
-    url: `https://wethepeeps.net/actor/${actor.slug}`,
+    url: `https://wethepeeps.net/actors/${actor.slug}`,
     sameAs: [
       actor.official_website_url,
       actor.social_media_url

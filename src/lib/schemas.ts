@@ -6,51 +6,80 @@ export interface SchemaField {
   table?: string;
   options?: string[];
   required?: boolean;
+  /**
+   * NEW: Used for dependent dropdowns. 
+   * e.g. entity_id depends on sector_id 
+   */
+  dependsOn?: string; 
 }
 
 export const TABLE_SCHEMAS: Record<string, SchemaField[]> = {
   sectors: [
     { name: 'name', label: 'Sector Name', type: 'text', required: true, placeholder: 'e.g. Healthcare, Law Enforcement' },
-    { name: 'slug', label: 'URL Slug', type: 'text', required: true, placeholder: 'law-enforcement' }
+    { name: 'slug', label: 'URL Slug', type: 'text', required: true, placeholder: 'law-enforcement' },
+    { name: 'seo_description', label: 'SEO Description', type: 'textarea' },
+    { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
   ],
   entities: [
     { name: 'name', label: 'Organization Name', type: 'text', required: true, placeholder: 'e.g. Redford Township' },
-    { name: 'sector_id', label: 'Sector', type: 'relation', table: 'sectors' },
+    { name: 'sector_id', label: 'Sector', type: 'relation', table: 'sectors', required: true },
     { name: 'description', label: 'Entity Summary', type: 'textarea' },
-    { name: 'slug', label: 'URL Slug', type: 'text', required: true, placeholder: 'redford-township' }
+    { name: 'slug', label: 'URL Slug', type: 'text', required: true, placeholder: 'redford-township' },
+    { name: 'seo_description', label: 'SEO Description', type: 'textarea' },
+    { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
   ],
   actors: [
+    { name: 'sector_id', label: 'Step 1: Filter by Sector', type: 'relation', table: 'sectors' },
+    { name: 'entity_id', label: 'Step 2: Affiliated Entity', type: 'relation', table: 'entities', dependsOn: 'sector_id', required: true },
     { name: 'full_name', label: 'Full Name', type: 'text', required: true },
-    { name: 'entity_id', label: 'Affiliated Entity', type: 'relation', table: 'entities' },
     { name: 'job_title', label: 'Official Title', type: 'text' },
     { name: 'status', label: 'Current Status', type: 'select', options: ['active', 'under_review', 'former'] },
     { name: 'slug', label: 'URL Slug', type: 'text', required: true },
-    { name: 'bio', label: 'Biography', type: 'textarea' }
+    { name: 'bio', label: 'Biography', type: 'textarea' },
+    { name: 'seo_description', label: 'SEO Description', type: 'textarea' },
+    { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
   ],
-  statutes: [
-    { name: 'citation', label: 'Statute Citation', type: 'text' },
-    { name: 'title', label: 'Statute Title', type: 'text' },
-    { name: 'category', label: 'Category', type: 'text' },
-    { name: 'description', label: 'Description', type: 'textarea' }
-  ],
-    incidents: [
-        { name: 'title', label: 'Incident Heading', type: 'text', required: true },
-        { name: 'description', label: 'Incident Narrative', type: 'textarea', required: true },
-        { name: 'actor_id', label: 'Primary Actor', type: 'relation', table: 'actors' },
-        { name: 'entity_id', label: 'Involved Entity', type: 'relation', table: 'entities' },
-        { name: 'statute_id', label: 'Relevant Statute', type: 'relation', table: 'statutes' },
-        { name: 'status', label: 'Current Status', type: 'select', options: ['pending', 'verified', 'archived'] },
-        { name: 'is_critical', label: 'Flag Critical?', type: 'select', options: ['0', '1'] },
-        { name: 'event_date', label: 'Date of Occurrence', type: 'date' }
-      ],
-  posts: [
-    { name: 'title', label: 'Post Title', type: 'text', required: true },
+statutes: [
+    { name: 'citation', label: 'Statute Citation', type: 'text', required: true },
+    { name: 'title', label: 'Statute Title', type: 'text', required: true },
     { name: 'slug', label: 'URL Slug', type: 'text', required: true },
-    { name: 'category', label: 'Category', type: 'select', options: ['Personal Story', 'How-To', 'Update', 'Legal Analysis'] },
-    { name: 'summary', label: 'Short Summary', type: 'textarea' },
-    { name: 'content', label: 'Main Content (Markdown)', type: 'textarea' },
-    { name: 'is_featured', label: 'Feature on Homepage?', type: 'select', options: ['0', '1'] }
+    { name: 'summary', label: 'Executive Summary', type: 'textarea' }, // Matches form
+    { name: 'legal_text', label: 'Full Legal Text', type: 'textarea' }, // Matches D1 column
+    { name: 'seo_description', label: 'SEO Description', type: 'textarea' },
+    { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
   ],
+  taxonomy_definitions: [
+    { name: 'name', label: 'Term Name', type: 'text', required: true },
+    { name: 'slug', label: 'URL Slug', type: 'text', required: true },
+    { name: 'type', label: 'Classification', type: 'select', options: ['category', 'tag', 'statute'], required: true },
+    { name: 'seo_description', label: 'SEO Description', type: 'textarea' },
+    { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
+  ],
+  incidents: [
+      { name: 'title', label: 'Incident Heading', type: 'text', required: true },
+      { name: 'slug', label: 'URL Slug', type: 'text', required: true },
+      { name: 'description', label: 'Incident Narrative', type: 'textarea', required: true },
+      { name: 'sector_id', label: 'Filter by Sector', type: 'relation', table: 'sectors' },
+      { name: 'entity_id', label: 'Involved Entity', type: 'relation', table: 'entities', dependsOn: 'sector_id' },
+      { name: 'actor_id', label: 'Primary Actor', type: 'relation', table: 'actors', dependsOn: 'entity_id' },
+      { name: 'statute_id', label: 'Relevant Statute', type: 'relation', table: 'statutes' },
+      { name: 'status', label: 'Current Status', type: 'select', options: ['pending', 'verified', 'archived'] },
+      { name: 'is_critical', label: 'Flag Critical?', type: 'select', options: ['0', '1'] },
+      { name: 'event_date', label: 'Date of Occurrence', type: 'date', required: true }, // Ensure date is required
+      { name: 'seo_description', label: 'SEO Description', type: 'textarea' },
+      { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
+    ],
+  posts: [
+      { name: 'title', label: 'Post Title', type: 'text', required: true },
+      { name: 'slug', label: 'URL Slug', type: 'text', required: true },
+      { name: 'category', label: 'Category', type: 'select', options: ['Personal Story', 'How-To', 'Update', 'Legal Analysis'] },
+      { name: 'summary', label: 'Short Summary', type: 'textarea' },
+      { name: 'content', label: 'Main Content (Markdown)', type: 'textarea' },
+      { name: 'is_featured', label: 'Feature on Homepage?', type: 'select', options: ['0', '1'] }, // D1 uses 0/1
+      { name: 'status', label: 'Publish Status', type: 'select', options: ['draft', 'published'] }, // Added missing status
+      { name: 'seo_description', label: 'SEO Description', type: 'textarea' },
+      { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
+    ],
   media: [
     { name: 'file_path', label: 'File Path', type: 'text', required: true },
     { name: 'alt_text', label: 'Alt Text', type: 'text' },
