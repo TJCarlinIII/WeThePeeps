@@ -14,8 +14,8 @@ export default function GlobalSearch() {
     if (val.length >= 2) {
       try {
         const res = await globalSearch(val);
-        setResults(res);
-      } catch (err) {
+        setResults(res as SearchResult[]); // Casting to ensure the array matches
+      } catch {
         setResults([]);
       }
     } else {
@@ -35,24 +35,60 @@ export default function GlobalSearch() {
       {results.length > 0 && (
         <div className="absolute top-full left-0 w-full bg-black border border-slate-800 mt-1 shadow-2xl z-50 max-h-96 overflow-y-auto">
           {results.map((r, i) => {
-            const link = r.type === 'STATUTE' ? `/statutes/${encodeURIComponent(r.subtitle || '')}` :
-              r.type === 'ACTOR' ? `/actors/${encodeURIComponent(r.title)}` :
-              r.type === 'ENTITY' ? `/entities/${encodeURIComponent(r.title)}` :
-              `/evidence/${r.id}`;
+            // Cast r.type as string to bypass potential type mismatch
+            const currentType = r.type as string;
+
+            const link =
+              currentType === 'STATUTE'
+                ? `/statutes/${encodeURIComponent(r.subtitle || '')}`
+                : currentType === 'ACTOR'
+                ? `/actors/${encodeURIComponent(r.title)}`
+                : currentType === 'ENTITY'
+                ? `/entities/${encodeURIComponent(r.title)}`
+                : currentType === 'REBUTTAL'
+                ? `/rebuttals/${r.id}`
+                : `/evidence/${r.id}`;
+
+            const isRebuttal = currentType === 'REBUTTAL';
 
             return (
               <Link
                 key={i}
                 href={link}
-                className="block p-3 border-b border-slate-900 hover:bg-slate-900/50 transition-colors"
-                onClick={() => { setResults([]); setQuery(""); }}
+                className={`block p-3 border-b border-slate-900 hover:bg-slate-900/50 transition-colors ${
+                  isRebuttal ? 'bg-emerald-900/5' : ''
+                }`}
+                onClick={() => {
+                  setResults([]);
+                  setQuery("");
+                }}
               >
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-[10px] text-[#4A90E2] font-bold uppercase">{r.type}</span>
+                  <span
+                    className={`text-[9px] font-black uppercase border px-1.5 py-0.5 ${
+                      isRebuttal
+                        ? 'text-emerald-500 border-emerald-900/5'
+                        : 'text-[#4A90E2] border-blue-900/50'
+                    }`}
+                  >
+                    {isRebuttal ? '🛡️ REBUTTAL' : r.type}
+                  </span>
                   <span className="text-[9px] text-slate-500">ID: {r.id}</span>
                 </div>
-                <div className="text-sm font-bold text-white truncate">{r.title}</div>
-                {r.subtitle && <div className="text-[10px] text-slate-400 truncate mt-1">{r.subtitle}</div>}
+
+                <div className="text-sm font-bold text-white truncate group-hover:text-[#4A90E2]">
+                  {r.title}
+                </div>
+
+                {r.subtitle && (
+                  <div
+                    className={`text-[10px] truncate mt-1 ${
+                      isRebuttal ? 'text-emerald-400 italic' : 'text-slate-400'
+                    }`}
+                  >
+                    {isRebuttal ? `TRUTH: ${r.subtitle}` : r.subtitle}
+                  </div>
+                )}
               </Link>
             );
           })}

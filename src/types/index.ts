@@ -30,3 +30,13 @@ export interface StatusBadgeConfig {
   label: string;
   color: string;
 }
+
+export interface Rebuttal {
+  id: number;
+  actor_id: number;
+  incident_id?: number;
+  falsified_claim: string;
+  clinical_fact: string;
+  evidence_url?: string;
+  created_at: string;
+}

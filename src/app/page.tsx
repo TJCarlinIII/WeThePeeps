@@ -11,14 +11,92 @@ interface EntityNode {
 }
 
 export const metadata = {
-  title: "WTP_CORE | Whistleblower Evidence & True Crime Database",
-  description: "A whistleblower-driven, evidence-backed database documenting systemic failures and true crime reports. Access the primary manifest for Redford Township and beyond.",
+  title: "WeThePeeps | Whistleblower Evidence & Michigan True Crime Archive",
+  description: "Primary source database documenting medical neglect, systemic abuse of power, and government accountability failures in Redford Township and Michigan.",
   keywords: [
-    "Redford Township Whistleblower", 
-    "True Crime Evidence Database", 
-    "Government Accountability Michigan", 
+    // --- CORE BRAND & LOCATION ---
+    "WeThePeeps Transparency Project",
+    "Redford Township Whistleblower",
+    "Michigan Government Accountability",
     "Evidence-Backed Investigations",
-    "WTP Transparency Project"
+
+    // --- EXECUTIVE & STATE-LEVEL ACCOUNTABILITY ---
+    "Governor Gretchen Whitmer healthcare oversight",
+    "Dana Nessel Attorney General vulnerable adult protection",
+    "Elizabeth Hertel MDHHS Director accountability",
+    "Michigan LARA doctor licensing protection",
+    "MSP Michigan State Police evidence suppression",
+    "MDHHS policy-driven medical neglect",
+    "Michigan Executive Branch systemic failure",
+    "Dana Nessel LGBTQ+ advocacy vs medical battery",
+    "Elizabeth Hertel concealment of institutional abuse",
+
+    // --- BOARD & LEADERSHIP CONNECTIONS ---
+    "Pat McRae Western Wayne Board",
+    "Wayne County Transit Authority Board of Directors",
+    "Corewell Health Farmington Hills Community Advisory Board",
+    "Pat McRae Corewell Health leadership",
+    "Western Wayne County leadership accountability",
+    "Conflict of interest Michigan public officials",
+    "Interlocking directorates Michigan healthcare and government",
+    
+    // --- MANSFIELD PRIVATE & NON-PROFIT LINKS ---
+    "Jennifer Mansfield Coeus Creative Group Partner",
+    "Coeus Creative Group Redford Police connection",
+    "SOAP Redford Save Our Adolescents from Prostitution",
+    "Jennifer Mansfield Human Trafficking trainer",
+    "Behavioral Intelligence training police misconduct",
+    "Jennifer Mansfield Livonia MI business address",
+
+    // --- PROSECUTION & DEFENSE INTERLOCKS ---
+    "Michael Bosnic Redford Township Prosecutor",
+    "Garan Lucow Miller PC insurance defense",
+    "Michael Bosnic Garan Lucow Miller shareholder",
+    "Conflict of interest contracted prosecutors Michigan",
+    "Insurance defense and healthcare law nexus",
+    "Michael Bosnic legal malpractice defense",
+    "Redford Township outsourced legal services",
+    "Garan Lucow Miller healthcare liability protection",
+
+    // --- KEY FIGURES & CASES ---
+    "Traci Kornak abuse neglect case", 
+    "Jennifer Mansfield Redford Police Chief", 
+    "Karla Sanders Redford Clerk FOIA",
+    "Dana Nessel Vulnerable Adult Protection review",
+    "Charlie LeDuff Michigan investigations",
+    "Irvin Gastman DO medical charges",
+    "Mark Buisson Redford Police",
+    
+    // --- SYSTEMIC ISSUES (Searchable Phrases) ---
+    "Michigan Medicaid Fraud investigation",
+    "Medical Battery Michigan hospitals",
+    "Adult Protective Services failures Michigan",
+    "Tandem365 predatory practices",
+    "Corewell Health medical neglect reports",
+    "Henry Ford Health System accountability",
+    "Michigan LARA doctor complaints",
+    "Weaponized mental health healthcare system",
+    "Vulnerable adult rights Michigan",
+    "FOIA falsification government transparency",
+    "LGBTQ+ healthcare discrimination Michigan",
+
+    // --- REGULATORY & OVERSIGHT FAILURES ---
+    "Michigan LARA doctor complaint archive",
+    "LARA Bureau of Community and Health Systems accountability",
+    "Michigan Adult Protective Services medical neglect",
+    "APS Michigan vulnerable adult gaslighting",
+    "MDHHS APS and hospital collusion",
+    "Michigan Licensing and Regulatory Affairs transparency",
+    "How to sue LARA for failure to regulate",
+    "LARA BPL medical practitioner oversight",
+    "Michigan APS emergency medical deprivation",
+
+    // --- TACTICAL KEYWORDS ---
+    "Medical Gaslighting Michigan",
+    "Institutional Gaslighting",
+    "Psychological weaponization in healthcare",
+    "Falsified medical records for liability protection",
+    "Clinical dismissal of emergency symptoms",
   ],
 };
 

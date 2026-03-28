@@ -1,8 +1,9 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import TaxonomyRegistry from "./TaxonomyRegistry";
 import { Taxonomy } from "@/components/admin/forms/TaxonomyForm";
+import AdminGuard from "@/components/admin/AdminGuard";
+import AdminSidebar from "@/components/admin/AdminSidebar";
 
-// 1. Maintain the Env interface for clarity
 interface Env extends Record<string, unknown> {
   DB: D1Database;
 }
@@ -18,8 +19,6 @@ interface TaxonomyRow {
 
 export default async function TaxonomyPage() {
   const context = await getCloudflareContext({ async: true });
-  
-  // 2. Explicitly cast the env to our local Env interface
   const env = context.env as Env;
   const db = env.DB;
 
@@ -31,15 +30,29 @@ export default async function TaxonomyPage() {
     id: row.id,
     name: row.name,
     type: row.type,
-    // Provide an empty string fallback if the interface requires a string
     slug: row.slug ?? "", 
     seo_description: row.seo_description ?? "",
     seo_keywords: row.seo_keywords ?? "",
   }));
 
   return (
-    <main className="min-h-screen bg-black">
-      <TaxonomyRegistry initialTerms={terms} />
-    </main>
+    <AdminGuard>
+      <div className="flex min-h-screen bg-black text-white font-mono">
+        <AdminSidebar />
+        <main className="flex-1 p-8 overflow-y-auto">
+          <div className="max-w-6xl mx-auto">
+            <header className="mb-12 border-b border-slate-900 pb-6">
+              <h1 className="text-3xl font-black italic tracking-tighter uppercase text-[#4A90E2]">
+                Taxonomy_Architect
+              </h1>
+              <p className="text-slate-500 text-[10px] mt-2 tracking-[0.3em]">
+                SECURE_NODE // CLASSIFICATION_ENGINE_V1
+              </p>
+            </header>
+            <TaxonomyRegistry initialTerms={terms} />
+          </div>
+        </main>
+      </div>
+    </AdminGuard>
   );
 }

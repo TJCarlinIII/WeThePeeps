@@ -6,14 +6,16 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
 const NAV_ITEMS = [
-  // New Taxonomy Item - Placed at the top
   { id: 'taxonomy', label: 'TAXONOMY', icon: '🧬', customPath: '/admin/taxonomy' },
+  { id: 'incidents', label: 'INCIDENTS', icon: '🚨' },
+  { id: 'rebuttals', label: 'REBUTTALS', icon: '🛡️' },
+  { id: 'cases', label: 'LEGAL CASES', icon: '💼' },
+  { id: 'media', label: 'MEDIA VAULT', icon: '💾' },
   { id: 'entities', label: 'ENTITIES', icon: '🏢' },
   { id: 'sectors', label: 'SECTORS', icon: '📂' },
   { id: 'posts', label: 'POSTS', icon: '📝' },
   { id: 'actors', label: 'ACTORS', icon: '👤' },
   { id: 'statutes', label: 'STATUTES', icon: '⚖️' },
-  { id: 'evidence', label: 'EVIDENCE', icon: '📎' }, 
 ];
 
 export default function AdminSidebar() {

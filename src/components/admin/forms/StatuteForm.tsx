@@ -5,130 +5,204 @@ import { slugify } from "@/lib/stringutils";
 
 export interface Statute {
   id?: number;
-  title: string;
   citation: string;
+  title: string;
   slug: string;
   summary: string;
   legal_text: string;
+  jurisdiction: 'Federal' | 'State' | 'Local';
+  jurisdiction_body: string;
   seo_description?: string;
   seo_keywords?: string;
+  official_website_url?: string;
+  categories?: string[];
+  tags?: string[];
+}
+
+interface Taxonomy { 
+  id: number; 
+  name: string; 
+  type: 'category' | 'tag'; 
+  slug: string; 
 }
 
 interface StatuteFormProps {
   initialData?: Statute | null;
-  onSave: (data: Statute) => void;
+  taxonomies: Taxonomy[];
+  onSave: (data: Statute) => Promise<void>;
 }
 
-export default function StatuteForm({ initialData, onSave }: StatuteFormProps) {
-  // 1. Define the base/empty state
+export default function StatuteForm({ initialData, taxonomies, onSave }: StatuteFormProps) {
   const emptyState: Statute = {
-    title: "",
-    citation: "",
-    slug: "",
-    summary: "",
-    legal_text: "",
-    seo_description: "",
-    seo_keywords: ""
+    citation: "", title: "", slug: "", summary: "", legal_text: "", 
+    jurisdiction: 'Federal',
+    jurisdiction_body: "",
+    seo_description: "", seo_keywords: "", official_website_url: "", 
+    categories: [""], tags: [""]
   };
 
-  // 2. Initialize state directly (Eliminates cascading render error)
-  const [formData, setFormData] = useState<Statute>(initialData || emptyState);
+  const [formData, setFormData] = useState<Statute>(() => {
+    if (!initialData) return emptyState;
+    return {
+      ...emptyState,
+      ...initialData,
+      categories: initialData.categories?.length ? initialData.categories : [""],
+      tags: initialData.tags?.length ? initialData.tags : [""],
+    };
+  });
+  
+  const [isPending, setIsPending] = useState(false);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
-    const slug = slugify(title);
-    setFormData(prev => ({ ...prev, title, slug }));
+    if (!initialData?.id) {
+      setFormData(prev => ({ ...prev, title, slug: slugify(title) }));
+    } else {
+      setFormData(prev => ({ ...prev, title }));
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    setIsPending(true);
+    // Filter out empty strings from arrays before saving
+    const submissionData = {
+      ...formData,
+      categories: formData.categories?.filter(c => c !== ""),
+      tags: formData.tags?.filter(t => t !== ""),
+    };
+    await onSave(submissionData);
+    setIsPending(false);
   };
 
-  const inputClass = "w-full bg-black border border-slate-800 p-2 text-xs text-white focus:border-blue-500 outline-none transition-all font-mono";
-  const labelClass = "block text-[9px] text-slate-500 uppercase mb-1 font-bold tracking-widest";
+  const inputClass = "w-full bg-slate-900 border border-slate-800 p-3 text-sm text-white focus:border-blue-500 outline-none transition-all";
+  const labelClass = "block text-[9px] text-slate-500 uppercase font-black mb-1";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-1 mb-4">
+        <label className="text-[9px] text-slate-500 uppercase font-black tracking-widest">System_Status</label>
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${isPending ? 'bg-yellow-500 animate-ping' : 'bg-emerald-500'}`} />
+          <span className="text-[10px] text-white font-bold uppercase tracking-widest">
+            {isPending ? 'Processing_Request...' : 'Ready'}
+          </span>
+        </div>
+      </div>
+
       <div>
         <label className={labelClass}>Statute_Title</label>
-        <input
-          type="text"
-          value={formData.title}
-          onChange={handleTitleChange}
-          className={inputClass}
-          required
-          placeholder="e.g. Freedom of Information Act"
-        />
+        <input type="text" value={formData.title} onChange={handleTitleChange} className={inputClass} required />
       </div>
 
-      <div>
-        <label className={labelClass}>Legal_Citation</label>
-        <input
-          type="text"
-          value={formData.citation}
-          onChange={(e) => setFormData({ ...formData, citation: e.target.value })}
-          className={inputClass}
-          required
-          placeholder="e.g. MCL 15.231"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={labelClass}>Legal_Citation</label>
+          <input type="text" value={formData.citation} onChange={(e) => setFormData(prev => ({ ...prev, citation: e.target.value }))} className={inputClass} required />
+        </div>
+        <div>
+          <label className={labelClass}>URL_Slug</label>
+          <input type="text" value={formData.slug} onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))} className={`${inputClass} text-blue-400 font-mono`} required />
+        </div>
       </div>
 
-      <div>
-        <label className={labelClass}>URL_Slug (Auto-Generated)</label>
-        <input
-          type="text"
-          value={formData.slug}
-          onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-          className={`${inputClass} text-blue-400 border-dashed`}
-          required
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={labelClass}>Jurisdiction_Level</label>
+          <select 
+            value={formData.jurisdiction} 
+            // FIXED: Cast to specific union type instead of 'any'
+            onChange={(e) => setFormData(prev => ({ ...prev, jurisdiction: e.target.value as Statute['jurisdiction'] }))}
+            className={`${inputClass} uppercase font-bold text-blue-400`}
+          >
+            <option value="Federal">Federal</option>
+            <option value="State">State</option>
+            <option value="Local">Local</option>
+          </select>
+        </div>
+        <div>
+          <label className={labelClass}>Governing_Body</label>
+          <input 
+            type="text" 
+            placeholder="e.g. Michigan / Redford / U.S."
+            value={formData.jurisdiction_body || ""} 
+            onChange={(e) => setFormData(prev => ({ ...prev, jurisdiction_body: e.target.value }))} 
+            className={inputClass} 
+          />
+        </div>
       </div>
 
       <div>
         <label className={labelClass}>Executive_Summary</label>
-        <textarea
-          value={formData.summary}
-          onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-          className={`${inputClass} h-20 resize-none`}
-          placeholder="Brief overview of what this law mandates..."
-        />
+        <textarea value={formData.summary} onChange={(e) => setFormData(prev => ({ ...prev, summary: e.target.value }))} className={`${inputClass} h-20 resize-none`} />
       </div>
 
       <div>
         <label className={labelClass}>Full_Legal_Text</label>
-        <textarea
-          value={formData.legal_text}
-          onChange={(e) => setFormData({ ...formData, legal_text: e.target.value })}
-          className={`${inputClass} h-48 resize-none text-[10px] leading-relaxed`}
-          placeholder="Paste the verbatim statute text here..."
-        />
+        <textarea value={formData.legal_text} onChange={(e) => setFormData(prev => ({ ...prev, legal_text: e.target.value }))} className={`${inputClass} h-40 resize-none text-[10px] leading-relaxed`} />
       </div>
 
-      <div className="border-t border-slate-900 pt-4">
-        <label className={`${labelClass} text-emerald-500`}>SEO_Description</label>
-        <textarea
-          value={formData.seo_description || ""}
-          onChange={(e) => setFormData({ ...formData, seo_description: e.target.value })}
-          className={`${inputClass} h-16 resize-none`}
-        />
+      <div className="border-t border-slate-900 pt-6 mt-6 space-y-6">
+        <h4 className="text-[10px] text-blue-500 font-black uppercase tracking-widest">Taxonomy & Links</h4>
+        
+        <div>
+          <label className={labelClass}>Categories</label>
+          {formData.categories?.map((c, i) => (
+            <div key={`cat-${i}`} className="flex gap-2 mb-2">
+              <select value={c} onChange={e => {
+                const newCats = [...(formData.categories || [])];
+                newCats[i] = e.target.value;
+                setFormData(prev => ({...prev, categories: newCats}));
+              }} className={`${inputClass} uppercase font-bold`}>
+                <option value="">-- SELECT CATEGORY --</option>
+                {taxonomies.filter(t => t.type === 'category').map(t => (
+                  <option key={t.id} value={String(t.slug)}>{t.name}</option>
+                ))}
+              </select>
+              <button type="button" onClick={() => setFormData(prev => ({...prev, categories: prev.categories?.filter((_, idx) => idx !== i)}))} className="px-4 bg-red-950/40 border border-red-900 text-red-500 hover:bg-red-600 hover:text-white font-bold transition-all">[X]</button>
+            </div>
+          ))}
+          <button type="button" onClick={() => setFormData(prev => ({...prev, categories: [...(prev.categories || []), ""]}))} className="text-[9px] text-[#4A90E2] font-bold uppercase hover:underline">+ Add Additional Category</button>
+        </div>
+
+        <div>
+          <label className={labelClass}>Tags</label>
+          {formData.tags?.map((t, i) => (
+            <div key={`tag-${i}`} className="flex gap-2 mb-2">
+              <select value={t} onChange={e => {
+                const newTags = [...(formData.tags || [])];
+                newTags[i] = e.target.value;
+                setFormData(prev => ({...prev, tags: newTags}));
+              }} className={`${inputClass} uppercase font-bold`}>
+                <option value="">-- SELECT TAG --</option>
+                {taxonomies.filter(t => t.type === 'tag').map(tax => (
+                  <option key={tax.id} value={String(tax.slug)}>{tax.name}</option>
+                ))}
+              </select>
+              <button type="button" onClick={() => setFormData(prev => ({...prev, tags: prev.tags?.filter((_, idx) => idx !== i)}))} className="px-4 bg-red-950/40 border border-red-900 text-red-500 hover:bg-red-600 hover:text-white font-bold transition-all">[X]</button>
+            </div>
+          ))}
+          <button type="button" onClick={() => setFormData(prev => ({...prev, tags: [...(prev.tags || []), ""]}))} className="text-[9px] text-[#4A90E2] font-bold uppercase hover:underline">+ Add Additional Tag</button>
+        </div>
+
+        <div>
+          <label className={labelClass}>Official Website URL</label>
+          <input type="url" value={formData.official_website_url || ""} onChange={(e) => setFormData(prev => ({ ...prev, official_website_url: e.target.value }))} className={`${inputClass} text-blue-400 font-mono`} placeholder="https://..." />
+        </div>
+
+        <div>
+          <label className={labelClass}>SEO_Description</label>
+          <textarea value={formData.seo_description || ""} onChange={(e) => setFormData(prev => ({ ...prev, seo_description: e.target.value }))} className={`${inputClass} h-16 resize-none`} />
+        </div>
+
+        <div>
+          <label className={labelClass}>SEO_Keywords</label>
+          <input type="text" value={formData.seo_keywords || ""} onChange={(e) => setFormData(prev => ({ ...prev, seo_keywords: e.target.value }))} className={inputClass} />
+        </div>
       </div>
 
-      <div>
-        <label className={`${labelClass} text-emerald-500`}>SEO_Keywords</label>
-        <input
-          type="text"
-          value={formData.seo_keywords || ""}
-          onChange={(e) => setFormData({ ...formData, seo_keywords: e.target.value })}
-          className={inputClass}
-        />
-      </div>
-
-      <button 
-        type="submit" 
-        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 text-[10px] uppercase tracking-[0.3em]"
-      >
-        Commit_Statute_To_Record
+      <button type="submit" disabled={isPending} className={`w-full mt-6 py-4 text-[11px] font-black uppercase tracking-[0.3em] transition-all border ${isPending ? 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed' : 'bg-blue-600 text-white border-blue-400 hover:bg-blue-500 active:scale-[0.98]'}`}>
+        {initialData?.id ? '[ Execute_Update ]' : '[ Commit_to_Registry ]'}
       </button>
     </form>
   );

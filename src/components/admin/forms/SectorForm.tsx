@@ -1,6 +1,7 @@
+// File: src/components/admin/forms/SectorForm.tsx
 "use client";
-import React, { useState, useEffect } from 'react';
-import { TABLE_SCHEMAS, SchemaField } from '@/lib/constants';
+import React, { useState } from 'react';
+import { slugify } from "@/lib/stringutils";
 
 export interface Sector {
   id?: number;
@@ -8,139 +9,140 @@ export interface Sector {
   slug: string;
   seo_description?: string;
   seo_keywords?: string;
+  categories?: string[];
+  tags?: string[];
+}
+
+interface Taxonomy {
+  id: number;
+  name: string;
+  type: 'category' | 'tag';
+  slug: string;
 }
 
 interface SectorFormProps {
   initialData?: Sector | null;
-  onSave: (data: Sector) => Promise<void> | void; // Updated to handle async
+  taxonomies: Taxonomy[];
+  onSave: (data: Sector) => Promise<void>;
 }
 
-export default function SectorForm({ initialData, onSave }: SectorFormProps) {
-  const [isPending, setIsPending] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  
-  const [formData, setFormData] = useState<Record<string, string | number | undefined>>({
-    name: initialData?.name || '',
-    slug: initialData?.slug || '',
-    seo_description: initialData?.seo_description || '',
-    seo_keywords: initialData?.seo_keywords || '',
+export default function SectorForm({ initialData, taxonomies, onSave }: SectorFormProps) {
+  const emptyState: Sector = {
+    name: "", slug: "", seo_description: "", seo_keywords: "", categories: [""], tags: [""]
+  };
+
+  const [formData, setFormData] = useState<Sector>(() => {
+    if (!initialData) return emptyState;
+    return {
+      ...emptyState,
+      ...initialData,
+      categories: initialData.categories?.length ? initialData.categories : [""],
+      tags: initialData.tags?.length ? initialData.tags : [""],
+    };
   });
+  const [isPending, setIsPending] = useState(false);
 
-  // Sync state if initialData changes (for editing)
-  useEffect(() => {
-    if (initialData) {
-      setFormData({
-        name: initialData.name,
-        slug: initialData.slug,
-        seo_description: initialData.seo_description || '',
-        seo_keywords: initialData.seo_keywords || '',
-      });
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value;
+    if (!initialData?.id) {
+      setFormData(prev => ({ ...prev, name, slug: slugify(name) }));
+    } else {
+      setFormData(prev => ({ ...prev, name }));
     }
-  }, [initialData]);
-
-  const handleNameChange = (val: string) => {
-    const slug = val
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/[\s_-]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-    
-    setFormData(prev => ({ 
-      ...prev, 
-      name: val, 
-      slug: initialData?.id ? prev.slug : slug 
-    }));
   };
 
-  const handleCommit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsPending(true);
-    try {
-      // 1. Await the database write
-      await onSave(formData as unknown as Sector);
-      
-      // 2. Trigger success notification
-      setShowSuccess(true);
-      
-      // 3. Reset form if not in Edit mode
-      if (!initialData?.id) {
-        setFormData({
-          name: '',
-          slug: '',
-          seo_description: '',
-          seo_keywords: '',
-        });
-      }
-
-      // 4. Clear success message after 3 seconds
-      setTimeout(() => setShowSuccess(false), 3000);
-    } catch (error) {
-      console.error("INGRESS_FAILURE:", error);
-    } finally {
-      setIsPending(false);
-    }
+    await onSave(formData);
+    setIsPending(false);
   };
 
-  const inputClass = "bg-black border border-slate-800 p-3 text-sm w-full focus:border-blue-500 outline-none text-white font-mono uppercase mb-4";
-  const labelClass = "text-[9px] text-slate-500 font-bold mb-1 block tracking-widest";
+  const inputClass = "w-full bg-slate-900 border border-slate-800 p-3 text-sm text-white focus:border-blue-500 outline-none transition-all";
+  const labelClass = "block text-[9px] text-slate-500 uppercase font-black mb-1";
 
   return (
-    <div className="flex flex-col relative">
-      {/* SUCCESS NOTIFICATION OVERLAY */}
-      {showSuccess && (
-        <div className="absolute top-[-40px] left-0 right-0 bg-emerald-500/10 border border-emerald-500 p-2 text-center animate-pulse">
-          <span className="text-emerald-500 text-[10px] font-black tracking-[0.2em]">
-            RECORD_INITIALIZED_SUCCESSFULLY
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* System status indicator */}
+      <div className="space-y-1 mb-4">
+        <label className="text-[9px] text-slate-500 uppercase font-black tracking-widest">System_Status</label>
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${isPending ? 'bg-yellow-500 animate-ping' : 'bg-emerald-500'}`} />
+          <span className="text-[10px] text-white font-bold uppercase tracking-widest">
+            {isPending ? 'Processing_Request...' : 'Ready'}
           </span>
         </div>
-      )}
+      </div>
 
-      {TABLE_SCHEMAS.sectors.map((field: SchemaField) => (
-        <div key={field.name}>
-          <label className={labelClass}>{field.label.toUpperCase()}</label>
-          {field.type === 'textarea' ? (
-            <textarea
-              className={`${inputClass} normal-case h-24`}
-              value={String(formData[field.name] || '')}
-              onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
-              placeholder={field.placeholder}
-            />
-          ) : (
-            <input
-              className={inputClass}
-              type="text"
-              value={String(formData[field.name] || '')}
-              onChange={(e) => {
-                if (field.name === 'name') handleNameChange(e.target.value);
-                else setFormData({ ...formData, [field.name]: e.target.value });
-              }}
-              placeholder={field.placeholder}
-              required={field.required}
-            />
-          )}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={labelClass}>Sector_Name</label>
+          <input type="text" value={formData.name} onChange={handleNameChange} className={inputClass} required />
         </div>
-      ))}
+        <div>
+          <label className={labelClass}>URL_Slug</label>
+          <input type="text" value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} className={`${inputClass} text-blue-400 font-mono`} required />
+        </div>
+      </div>
 
-      <button
-        type="button"
-        disabled={isPending}
-        onClick={handleCommit}
-        className={`py-4 font-black text-xs tracking-[0.3em] transition-all mt-4 border ${
-          isPending 
-            ? "bg-slate-900 border-slate-700 text-slate-500 cursor-wait" 
-            : showSuccess
-            ? "bg-emerald-600 border-emerald-400 text-white"
-            : "bg-[#4A90E2] border-blue-400 hover:bg-blue-500 text-black"
-        }`}
-      >
-        {isPending 
-          ? "COMMITTING_TO_DATABASE..." 
-          : showSuccess 
-          ? "RECORD_SAVED" 
-          : initialData?.id 
-          ? "CONFIRM_DATABASE_OVERRIDE" 
-          : "INITIALIZE_NEW_RECORD"}
+      {/* Taxonomy Section */}
+      <div className="border-t border-slate-900 pt-6 mt-6 space-y-6">
+        <h4 className="text-[10px] text-blue-500 font-black uppercase tracking-widest">Taxonomy & Meta</h4>
+        
+        <div>
+          <label className={labelClass}>Categories</label>
+          {formData.categories?.map((c, i) => (
+            <div key={`cat-${i}`} className="flex gap-2 mb-2">
+              <select value={c} onChange={e => {
+                const newCats = [...(formData.categories || [])];
+                newCats[i] = e.target.value;
+                setFormData({...formData, categories: newCats});
+              }} className={`${inputClass} uppercase font-bold`}>
+                <option value="">-- SELECT CATEGORY --</option>
+                {taxonomies.filter(t => t.type === 'category').map(t => (
+                  <option key={t.id} value={String(t.slug)}>{t.name}</option>
+                ))}
+              </select>
+              <button type="button" onClick={() => setFormData({...formData, categories: formData.categories?.filter((_, idx) => idx !== i)})} className="px-4 bg-red-950/40 border border-red-900 text-red-500 hover:bg-red-600 hover:text-white font-bold transition-all">[X]</button>
+            </div>
+          ))}
+          <button type="button" onClick={() => setFormData({...formData, categories: [...(formData.categories || []), ""]})} className="text-[9px] text-[#4A90E2] font-bold uppercase hover:underline">+ Add Additional Category</button>
+        </div>
+
+        <div>
+          <label className={labelClass}>Tags</label>
+          {formData.tags?.map((t, i) => (
+            <div key={`tag-${i}`} className="flex gap-2 mb-2">
+              <select value={t} onChange={e => {
+                const newTags = [...(formData.tags || [])];
+                newTags[i] = e.target.value;
+                setFormData({...formData, tags: newTags});
+              }} className={`${inputClass} uppercase font-bold`}>
+                <option value="">-- SELECT TAG --</option>
+                {taxonomies.filter(t => t.type === 'tag').map(tax => (
+                  <option key={tax.id} value={String(tax.slug)}>{tax.name}</option>
+                ))}
+              </select>
+              <button type="button" onClick={() => setFormData({...formData, tags: formData.tags?.filter((_, idx) => idx !== i)})} className="px-4 bg-red-950/40 border border-red-900 text-red-500 hover:bg-red-600 hover:text-white font-bold transition-all">[X]</button>
+            </div>
+          ))}
+          <button type="button" onClick={() => setFormData({...formData, tags: [...(formData.tags || []), ""]})} className="text-[9px] text-[#4A90E2] font-bold uppercase hover:underline">+ Add Additional Tag</button>
+        </div>
+
+        <div>
+          <label className={labelClass}>SEO_Description</label>
+          <textarea value={formData.seo_description || ""} onChange={(e) => setFormData({ ...formData, seo_description: e.target.value })} className={`${inputClass} h-16 resize-none`} />
+        </div>
+
+        <div>
+          <label className={labelClass}>SEO_Keywords</label>
+          <input type="text" value={formData.seo_keywords || ""} onChange={(e) => setFormData({ ...formData, seo_keywords: e.target.value })} className={inputClass} />
+        </div>
+      </div>
+
+      <button type="submit" disabled={isPending} className={`w-full mt-6 py-4 text-[11px] font-black uppercase tracking-[0.3em] transition-all border ${isPending ? 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed' : 'bg-blue-600 text-white border-blue-400 hover:bg-blue-500 active:scale-[0.98]'}`}>
+        {initialData?.id ? '[ Execute_Update ]' : '[ Commit_to_Registry ]'}
       </button>
-    </div>
+    </form>
   );
 }

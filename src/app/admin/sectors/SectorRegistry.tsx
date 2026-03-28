@@ -1,41 +1,50 @@
 // File: src/app/admin/sectors/SectorRegistry.tsx
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Edit, Trash2, Maximize2, Minimize2, Loader2 } from "lucide-react";
-import AdminSidebar from "@/components/admin/AdminSidebar";
 import SectorForm, { Sector } from '@/components/admin/forms/SectorForm';
 
-export function SectorRegistry() {
-  const [sectors, setSectors] = useState<Sector[]>([]);
+interface Taxonomy { id: number; name: string; type: 'category' | 'tag'; slug: string; }
+
+export default function SectorRegistry() {
+  const [rows, setRows] = useState<Sector[]>([]);
+  const [taxonomies, setTaxonomies] = useState<Taxonomy[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<number[]>([]);
-  const hasFetched = useRef(false);
 
-  const fetchSectors = useCallback(async () => {
-    setIsLoading(true);
+  const refreshData = useCallback(async (isMounted: boolean) => {
     try {
-      const res = await fetch('/api/sectors');
-      // FIX: Map correctly from 'results' as per the API's JSON output structure
-      const data = (await res.json()) as { results: Sector[] };
-      const rowsData = data.results || []; 
-      setSectors(rowsData);
+      const [secRes, taxRes] = await Promise.all([
+        fetch('/api/sectors'),
+        fetch('/api/taxonomy')
+      ]);
+
+      const secData = await secRes.json() as { results: Sector[] };
+      const taxData = await taxRes.json() as { terms: Taxonomy[] };
+
+      if (isMounted) {
+        setRows(secData.results || []);
+        setTaxonomies(taxData.terms || []);
+      }
     } catch (err) {
       console.error("FETCH_ERROR:", err);
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (!hasFetched.current) {
-      fetchSectors();
-      hasFetched.current = true;
-    }
-  }, [fetchSectors]);
+    let isMounted = true;
+
+    // Using an IIFE to wrap the async call prevents the "synchronous setState" warning
+    (async () => {
+      await refreshData(isMounted);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [refreshData]);
 
   const handleSave = async (formData: Sector) => {
     const method = isEditing ? 'PATCH' : 'POST';
@@ -48,7 +57,9 @@ export function SectorRegistry() {
       if (res.ok) {
         setIsEditing(false);
         setSelectedId(null);
-        fetchSectors();
+        await refreshData(true);
+      } else {
+        alert("CRITICAL_ERROR: Failed to save record.");
       }
     } catch (err) {
       console.error("SAVE_ERROR:", err);
@@ -56,138 +67,97 @@ export function SectorRegistry() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("PURGE_SECTOR? This may affect linked entities.")) return;
-    try {
-      const res = await fetch(`/api/sectors?id=${id}`, { method: 'DELETE' });
-      if (res.ok) fetchSectors();
-    } catch (err) {
-      console.error("DELETE_ERROR:", err);
+    if (confirm("PURGE_SECTOR? This action cannot be undone.")) {
+      try {
+        const res = await fetch(`/api/sectors?id=${id}`, { method: 'DELETE' });
+        if (res.ok) await refreshData(true);
+      } catch (err) {
+        console.error("DELETE_ERROR:", err);
+      }
     }
   };
 
-  const toggleExpand = (id: number) => {
-    setExpandedIds(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-  };
+  const toggleExpand = (id: number) => setExpandedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
-  const selectedRow = sectors.find((r: Sector) => r.id === selectedId);
+  const selectedRow = rows.find(r => r.id === selectedId);
 
   return (
-    <div className="flex min-h-screen bg-black text-white font-mono">
-      <AdminSidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
-        <div className="flex justify-between items-center mb-8 border-b border-slate-900 pb-4">
-          <Link
-            href="/admin"
-            className="bg-slate-900 px-4 py-2 border border-slate-800 text-[10px] font-bold uppercase hover:bg-blue-600 transition-all"
-          >
-            « Back_to_Control_Center
-          </Link>
-          <div className="text-right">
-            <h1 className="text-xl font-black tracking-tighter uppercase">Sector_Authority_Index</h1>
-            <p className="text-[9px] text-slate-500 uppercase">System: Category_Management</p>
-          </div>
+    <main className="flex-1 p-6 overflow-y-auto bg-black text-white font-mono">
+      <div className="flex justify-between items-center mb-8 border-b border-slate-900 pb-4">
+        <Link href="/admin" className="group flex items-center gap-3 bg-slate-900/50 hover:bg-blue-600/20 px-4 py-2 rounded border border-slate-800 transition-all">
+          <span className="text-blue-500 text-lg">«</span>
+          <span className="text-white font-bold uppercase tracking-widest text-[10px]">Back_to_Control_Center</span>
+        </Link>
+        <div className="text-right">
+          <h1 className="text-white font-black tracking-widest text-lg uppercase">Sector_Architect</h1>
+          <p className="text-[9px] text-slate-600 uppercase tracking-widest">Node_Status: Online</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+        <div className="xl:col-span-5 sticky top-6 bg-slate-950/50 border border-slate-800 p-6 rounded shadow-xl h-fit">
+           <h2 className="text-sm font-black text-blue-500 mb-6 uppercase tracking-widest border-b border-slate-900 pb-3">
+             {isEditing ? `Override_Sector [ID: ${selectedId}]` : 'Create_New_Node'}
+           </h2>
+           <SectorForm key={selectedId || 'new'} initialData={isEditing ? selectedRow : null} taxonomies={taxonomies} onSave={handleSave} />
+           {isEditing && (
+             <button onClick={() => { setIsEditing(false); setSelectedId(null); }} className="w-full mt-4 py-3 text-[10px] text-slate-500 hover:text-white uppercase font-bold border border-dashed border-slate-800 transition-all">
+               [ Abort_Edit ]
+             </button>
+           )}
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-          <div className="xl:col-span-5 bg-slate-950/50 border border-slate-800 p-6 rounded sticky top-8 h-fit">
-            <h2 className="text-blue-500 text-[10px] font-black uppercase mb-6 tracking-widest">
-              {isEditing ? `Modify_Sector [ID: ${selectedId}]` : 'Initialize_New_Sector'}
-            </h2>
-            <SectorForm
-              key={selectedId || 'new'}
-              initialData={isEditing ? selectedRow : null}
-              onSave={handleSave}
-            />
-            {isEditing && (
-              <button
-                onClick={() => { setIsEditing(false); setSelectedId(null); }}
-                className="w-full mt-4 py-3 text-[10px] text-slate-500 hover:text-white uppercase font-bold border border-dashed border-slate-800 transition-all"
-              >
-                [ Abort_Edit ]
-              </button>
-            )}
-          </div>
-
-          <div className="xl:col-span-7">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.4em]">
-                Active_Sectors
-              </h2>
-              {isLoading && (
-                <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
-              )}
-            </div>
-
-            <div className="space-y-2">
-              {sectors.map((sector: Sector) => {
-                const isExpanded = expandedIds.includes(sector.id!);
-                return (
-                  <div
-                    key={sector.id}
-                    className={`p-4 border transition-all ${
-                      selectedId === sector.id
-                        ? 'border-blue-500 bg-blue-900/10'
-                        : 'border-slate-900 bg-black'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 cursor-pointer" onClick={() => toggleExpand(sector.id!)}>
-                        <h3 className="text-lg font-black uppercase">{sector.name}</h3>
-                        <p className="text-slate-500 text-[9px] font-mono uppercase">
-                          URL_SLUG: {sector.slug}
-                        </p>
+        <div className="xl:col-span-7">
+          <h2 className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.4em] mb-4 border-b border-slate-900 pb-2">Live_Manifest</h2>
+          <div className="space-y-4">
+            {rows.map(row => {
+              const isExpanded = expandedIds.includes(row.id!);
+              return (
+                <div key={row.id} className={`bg-black border-2 transition-all duration-300 ${selectedId === row.id ? 'border-blue-600 bg-blue-900/5' : 'border-slate-900'}`}>
+                  <div className="p-6">
+                    <div className="flex justify-between items-center">
+                      <div className="cursor-pointer flex-1" onClick={() => toggleExpand(row.id!)}>
+                        <span className="text-[10px] text-blue-400 font-black uppercase tracking-widest bg-blue-900/20 px-2 py-1 rounded mr-2">
+                          [ SECTOR_DEF ]
+                        </span>
+                        <h3 className="text-xl font-black text-white uppercase mt-2 tracking-tight">
+                          {row.name}
+                        </h3>
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setSelectedId(sector.id!);
-                            setIsEditing(true);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          className="border border-slate-800 px-3 py-2 text-[10px] font-bold hover:bg-white hover:text-black transition-all"
-                        >
-                          <Edit className="h-3 w-3 inline mr-1" /> EDIT
+
+                      <div className="flex gap-3 items-center">
+                        <button onClick={() => toggleExpand(row.id!)} className="bg-slate-900 border border-slate-700 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-300 hover:bg-slate-800 transition-all">
+                          {isExpanded ? "↑ LESS" : "↓ MORE"}
                         </button>
-                        <button
-                          onClick={() => handleDelete(sector.id!)}
-                          className="border border-red-900 px-3 py-2 text-[10px] font-bold text-red-500 hover:bg-red-600 hover:text-white transition-all"
-                        >
-                          <Trash2 className="h-3 w-3 inline mr-1" /> [X]
+                        <button onClick={() => { setSelectedId(row.id!); setIsEditing(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-blue-900/40 border border-blue-500/50 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-blue-200 hover:bg-blue-600 hover:text-white transition-all">
+                          EDIT
                         </button>
-                        <button
-                          onClick={() => toggleExpand(sector.id!)}
-                          className="border border-slate-800 px-3 py-2 text-[10px] font-bold hover:bg-slate-800 transition-all"
-                        >
-                          {isExpanded ? (
-                            <Minimize2 className="h-3 w-3" />
-                          ) : (
-                            <Maximize2 className="h-3 w-3" />
-                          )}
+                        <button onClick={() => handleDelete(row.id!)} className="bg-red-950/40 border border-red-900 px-4 py-2 text-[10px] font-bold text-red-500 hover:bg-red-600 hover:text-white transition-all">
+                          [X]
                         </button>
                       </div>
                     </div>
 
-                    {isExpanded && sector.seo_description && (
-                      <div className="mt-4 pt-4 border-t border-slate-800 text-slate-400 text-sm font-sans italic">
-                        {sector.seo_description}
+                    <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[800px] opacity-100 mt-4 border-t border-slate-900 pt-4' : 'max-h-0 opacity-0'}`}>
+                      <p className="text-sm text-slate-400 leading-relaxed font-sans mb-4 italic">
+                        {row.seo_description || "NO_DESCRIPTION_SET"}
+                      </p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[9px] font-black text-emerald-900 uppercase">KEYWORDS:</span>
+                        <p className="text-[11px] text-emerald-600 font-mono">{row.seo_keywords || 'NOT_SET'}</p>
                       </div>
-                    )}
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[9px] font-black text-slate-800 uppercase">SLUG:</span>
+                        <p className="text-[11px] text-slate-600 font-mono">/{row.slug}</p>
+                      </div>
+                    </div>
                   </div>
-                );
-              })}
-              {!isLoading && sectors.length === 0 && (
-                <div className="text-center py-12 border border-dashed border-slate-800">
-                  <p className="text-slate-500 text-[10px] uppercase tracking-widest">
-                    No sectors defined yet.
-                  </p>
                 </div>
-              )}
-            </div>
+              );
+            })}
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
