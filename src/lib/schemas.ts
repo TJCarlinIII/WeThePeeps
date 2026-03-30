@@ -110,6 +110,21 @@ export const TABLE_SCHEMAS: Record<string, SchemaField[]> = {
     { name: 'statute_id', label: 'Relevant Statute', type: 'relation', table: 'statutes' },
     { name: 'status', label: 'Current Status', type: 'select', options: ['pending', 'verified', 'archived'] },
     { name: 'is_critical', label: 'Flag Critical?', type: 'select', options: ['0', '1'] },
+    
+    // ✅ NEW: Moral Violation Type (Natural Law Framework)
+    { 
+      name: 'moral_violation_type', 
+      label: 'Moral Violation Type', 
+      type: 'select', 
+      options: [
+        'not-kill',      // Thou Shalt Not Kill
+        'false-witness', // Thou Shalt Not Bear False Witness  
+        'not-steal',     // Thou Shalt Not Steal
+        'not-covet',     // Thou Shalt Not Covet
+        'honor-parents'  // Honor Thy Father and Mother
+      ] 
+    },
+    
     { name: 'seo_description', label: 'SEO Description', type: 'textarea' },
     { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
   ],

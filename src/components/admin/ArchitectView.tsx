@@ -2,7 +2,7 @@
 "use client";
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TABLE_SCHEMAS, type SchemaField } from '@/lib/schemas';
-import { Edit3, Trash2, RefreshCw } from 'lucide-react';
+import { Edit3, Trash2, RefreshCw, Shield, Scale, Gavel, Building2, HeartPulse, AlertTriangle, Users } from 'lucide-react';
 import { saveRecord, deleteRecord, getRecords } from '@/app/admin/actions';
 
 interface ArchitectProps {
@@ -142,6 +142,41 @@ export default function ArchitectView({ table, title }: ArchitectProps) {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [filter, setFilter] = useState('ALL'); // ✅ NEW: Natural Law filter state
+
+  // ✅ Enhanced Natural Law / Ethical Anchors (v2.2)
+  const naturalLawFilters = [
+    { 
+      label: "Sanctity of Life", 
+      value: "not-kill", 
+      commandment: "Thou Shalt Not Kill",
+      description: "Medical negligence, terminal protocol failures, and deprivation of care."
+    },
+    { 
+      label: "Moral Integrity", 
+      value: "false-witness", 
+      commandment: "Thou Shalt Not Bear False Witness",
+      description: "Falsified medical records, deceptive testimony, and fraudulent reporting."
+    },
+    { 
+      label: "Financial Justice", 
+      value: "not-steal", 
+      commandment: "Thou Shalt Not Steal",
+      description: "Predatory billing, insurance fraud, and deprivation of patient finances."
+    },
+    { 
+      label: "Institutional Motive", 
+      value: "not-covet", 
+      commandment: "Thou Shalt Not Covet",
+      description: "Profit-over-patient motives and aggressive corporate expansion at the cost of safety."
+    },
+    { 
+      label: "Vulnerable Care", 
+      value: "honor-parents", 
+      commandment: "Honor Thy Father and Mother",
+      description: "Elder abuse, nursing home neglect, and interference with family advocacy."
+    }
+  ];
 
   // ✅ Load records + related table data for comboboxes
   const loadData = async () => {
@@ -355,6 +390,27 @@ export default function ArchitectView({ table, title }: ArchitectProps) {
     );
   };
 
+  // ✅ Filter records based on Natural Law filter
+  const filteredRecords = useMemo(() => {
+    if (filter === 'ALL') return records;
+    
+    // Simple keyword matching for demonstration
+    // In production, you'd map records to natural law categories via metadata/tags
+    const keywords: Record<string, string[]> = {
+      'not-kill': ['medical', 'negligence', 'death', 'deprivation', 'care', 'health', 'life'],
+      'false-witness': ['falsified', 'false', 'deceptive', 'fraud', 'lie', 'misrepresent', 'perjury'],
+      'not-steal': ['billing', 'financial', 'insurance', 'fraud', 'predatory', 'deprivation', 'theft', 'covet'],
+      'not-covet': ['profit', 'expansion', 'corporate', 'motive', 'greed', 'covet', 'acquisition'],
+      'honor-parents': ['elder', 'nursing', 'family', 'advocacy', 'parent', 'vulnerable', 'care', 'honor']
+    };
+    
+    const filterKeywords = keywords[filter] || [];
+    return records.filter(record => {
+      const recordText = JSON.stringify(record).toLowerCase();
+      return filterKeywords.some(keyword => recordText.includes(keyword));
+    });
+  }, [records, filter]);
+
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-black text-white font-mono">
       {/* LEFT PANE: FORM / DATA INGRESS */}
@@ -408,13 +464,13 @@ export default function ArchitectView({ table, title }: ArchitectProps) {
         </form>
       </div>
 
-      {/* RIGHT PANE: LIVE MANIFEST */}
+      {/* RIGHT PANE: LIVE MANIFEST WITH ENHANCED NATURAL LAW FILTERS */}
       <div className="flex-1 p-6 bg-black">
         <div className="flex justify-between items-center mb-6 border-b border-slate-900 pb-4">
           <div>
             <h1 className="text-xl font-bold tracking-tighter text-white uppercase">{title}</h1>
             <p className="text-[9px] text-emerald-500 uppercase mt-1 font-bold tracking-[0.2em]">
-              {records.length}_RECORDS_LOADED
+              {filteredRecords.length}_RECORDS_LOADED // Active_Filter: {filter}
             </p>
           </div>
           <button
@@ -427,13 +483,60 @@ export default function ArchitectView({ table, title }: ArchitectProps) {
           </button>
         </div>
 
+        {/* Enhanced Natural Law Filter Sidebar */}
+        <aside className="mb-8 p-4 border border-slate-900 bg-slate-950/30">
+          <h3 className="text-[10px] uppercase text-red-900 mb-3 border-l-2 border-red-900 pl-2">
+            Natural_Law_Anchors_v2.2
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {naturalLawFilters.map((law) => (
+              <button
+                key={law.value}
+                onClick={() => setFilter(law.value)}
+                className={`group flex flex-col text-left space-y-1 p-3 border transition-all ${
+                  filter === law.value 
+                    ? 'border-red-900 bg-red-950/20 text-red-500' 
+                    : 'border-slate-800 hover:border-red-900/50 hover:bg-slate-900/30'
+                }`}
+              >
+                <span className="text-[11px] font-bold uppercase flex items-center gap-2">
+                  {law.value === 'not-kill' && <HeartPulse size={14} />}
+                  {law.value === 'false-witness' && <Scale size={14} />}
+                  {law.value === 'not-steal' && <AlertTriangle size={14} />}
+                  {law.value === 'not-covet' && <Building2 size={14} />}
+                  {law.value === 'honor-parents' && <Users size={14} />}
+                  {law.commandment}
+                </span>
+                <span className="text-[9px] text-slate-600 leading-tight">
+                  {law.description}
+                </span>
+              </button>
+            ))}
+            <button
+              onClick={() => setFilter('ALL')}
+              className={`group flex flex-col text-left space-y-1 p-3 border transition-all ${
+                filter === 'ALL' 
+                  ? 'border-[#4A90E2] bg-[#4A90E2]/10 text-[#4A90E2]' 
+                  : 'border-slate-800 hover:border-[#4A90E2]/50 hover:bg-slate-900/30'
+              }`}
+            >
+              <span className="text-[11px] font-bold uppercase flex items-center gap-2">
+                <Shield size={14} /> [ALL_RECORDS]
+              </span>
+              <span className="text-[9px] text-slate-600 leading-tight">
+                Show all records without filtering
+              </span>
+            </button>
+          </div>
+        </aside>
+
         {loading ? (
           <p className="text-slate-700 animate-pulse text-xs uppercase">Loading_records...</p>
-        ) : records.length === 0 ? (
-          <p className="text-slate-600 text-xs uppercase">No records found</p>
+        ) : filteredRecords.length === 0 ? (
+          <p className="text-slate-600 text-xs uppercase">No records found for filter: {filter}</p>
         ) : (
           <div className="space-y-3">
-            {records.map((record) => (
+            {filteredRecords.map((record) => (
               <div
                 key={record.id}
                 className="group border border-slate-900 bg-slate-950/40 p-4 flex justify-between items-center hover:border-[#4A90E2]/40 transition-all"
