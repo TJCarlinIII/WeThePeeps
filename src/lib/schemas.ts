@@ -1,19 +1,25 @@
+// File: src/lib/schemas.ts
 export interface SchemaField {
   name: string;
   label: string;
-  type: 'text' | 'textarea' | 'select' | 'relation' | 'date' | 'number';
+  // ✅ Added "boolean" to this union type to support checkbox flags
+  type: 'text' | 'textarea' | 'select' | 'relation' | 'date' | 'number' | 'boolean'; 
   placeholder?: string;
   table?: string;
   options?: string[];
   required?: boolean;
   /**
-   * NEW: Used for dependent dropdowns. 
+   * Used for dependent dropdowns. 
    * e.g. entity_id depends on sector_id 
    */
   dependsOn?: string; 
 }
 
 export const TABLE_SCHEMAS: Record<string, SchemaField[]> = {
+  
+  // ─────────────────────────────────────────────────────────────
+  // SECTORS
+  // ─────────────────────────────────────────────────────────────
   sectors: [
     { name: 'name', label: 'Sector Name', type: 'text', required: true, placeholder: 'e.g. Healthcare, Law Enforcement' },
     { name: 'slug', label: 'URL Slug', type: 'text', required: true, placeholder: 'law-enforcement' },
@@ -21,15 +27,34 @@ export const TABLE_SCHEMAS: Record<string, SchemaField[]> = {
     { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
   ],
 
+  // ─────────────────────────────────────────────────────────────
+  // ENTITIES (with Behavioral & Legal Protocol Flags)
+  // ─────────────────────────────────────────────────────────────
   entities: [
     { name: 'name', label: 'Organization Name', type: 'text', required: true, placeholder: 'e.g. Redford Township' },
     { name: 'sector_id', label: 'Sector', type: 'relation', table: 'sectors', required: true },
-    { name: 'description', label: 'Entity Summary', type: 'textarea' },
     { name: 'slug', label: 'URL Slug', type: 'text', required: true, placeholder: 'redford-township' },
+    { name: 'parent_entity_id', label: 'Parent Organization', type: 'relation', table: 'entities' },
+    { name: 'address', label: 'Street Address', type: 'text' },
+    { name: 'city', label: 'City', type: 'text' },
+    { name: 'zip_code', label: 'Zip Code', type: 'text' },
+    { name: 'phone', label: 'Phone Number', type: 'text' },
+    { name: 'official_website_url', label: 'Official Website', type: 'text' },
+    
+    // ✅ NEW: Behavioral & Legal Protocol Flags (type: 'boolean')
+    { name: 'is_foia_target', label: 'Enable FOIA Generator', type: 'boolean' },
+    { name: 'is_medical_target', label: 'Enable Medical Demand', type: 'boolean' },
+    { name: 'history_of_falsification', label: 'History of Falsification (Liar Clause)', type: 'boolean' },
+    { name: 'history_of_withholding', label: 'History of Withholding (Haunting Clause)', type: 'boolean' },
+    { name: 'statutory_delayer', label: 'Statutory Delayer (5-Day Warning)', type: 'boolean' },
+
     { name: 'seo_description', label: 'SEO Description', type: 'textarea' },
     { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
   ],
 
+  // ─────────────────────────────────────────────────────────────
+  // ACTORS
+  // ─────────────────────────────────────────────────────────────
   actors: [
     { name: 'sector_id', label: 'Step 1: Filter by Sector', type: 'relation', table: 'sectors' },
     { name: 'entity_id', label: 'Step 2: Affiliated Entity', type: 'relation', table: 'entities', dependsOn: 'sector_id', required: true },
@@ -45,16 +70,24 @@ export const TABLE_SCHEMAS: Record<string, SchemaField[]> = {
     { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
   ],
 
+  // ─────────────────────────────────────────────────────────────
+  // STATUTES
+  // ─────────────────────────────────────────────────────────────
   statutes: [
     { name: 'citation', label: 'Statute Citation', type: 'text', required: true },
     { name: 'title', label: 'Statute Title', type: 'text', required: true },
     { name: 'slug', label: 'URL Slug', type: 'text', required: true },
+    { name: 'jurisdiction', label: 'Jurisdiction Level', type: 'select', options: ['Federal', 'State', 'Local'] },
+    { name: 'jurisdiction_body', label: 'Governing Body', type: 'text', placeholder: 'Michigan / Redford' },
     { name: 'summary', label: 'Executive Summary', type: 'textarea' },
     { name: 'legal_text', label: 'Full Legal Text', type: 'textarea' },
     { name: 'seo_description', label: 'SEO Description', type: 'textarea' },
     { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
   ],
 
+  // ─────────────────────────────────────────────────────────────
+  // TAXONOMY DEFINITIONS
+  // ─────────────────────────────────────────────────────────────
   taxonomy_definitions: [
     { name: 'name', label: 'Term Name', type: 'text', required: true },
     { name: 'slug', label: 'URL Slug', type: 'text', required: true },
@@ -63,6 +96,9 @@ export const TABLE_SCHEMAS: Record<string, SchemaField[]> = {
     { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
   ],
 
+  // ─────────────────────────────────────────────────────────────
+  // INCIDENTS
+  // ─────────────────────────────────────────────────────────────
   incidents: [
     { name: 'title', label: 'Incident Heading', type: 'text', required: true },
     { name: 'slug', label: 'URL Slug', type: 'text', required: true },
@@ -78,20 +114,30 @@ export const TABLE_SCHEMAS: Record<string, SchemaField[]> = {
     { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
   ],
 
+  // ─────────────────────────────────────────────────────────────
+  // REBUTTALS
+  // ─────────────────────────────────────────────────────────────
   rebuttals: [
     { name: 'actor_id', label: 'Step 1: Select Individual', type: 'relation', table: 'actors', required: true },
-    { name: 'falsified_claim', label: 'Falsified Claim (The "Lie")', type: 'textarea', required: true, placeholder: 'e.g., "Patient is neurologically intact"' },
-    { name: 'clinical_fact', label: 'Clinical Fact (The "Lab")', type: 'textarea', required: true, placeholder: 'e.g., "U of M confirms Bilateral Sensorineural Hearing Loss"' },
-    { name: 'evidence_url', label: 'GitHub Evidence (AVIF) URL', type: 'text', placeholder: 'https://raw.githubusercontent.com/...' },
+    { name: 'falsified_claim', label: 'Falsified Claim (The "Lie")', type: 'textarea', required: true, placeholder: 'patient is neurologically intact' },
+    { name: 'clinical_fact', label: 'Clinical Fact (The "Lab")', type: 'textarea', required: true, placeholder: 'U of M confirms Hearing Loss' },
+    { name: 'evidence_id', label: 'Master Evidence Document', type: 'relation', table: 'media' }, // ✅ Added so the UI can map it to media
+    { name: 'evidence_url', label: 'External Fallback URL', type: 'text' },
     { name: 'incident_id', label: 'Associated Incident (Optional)', type: 'relation', table: 'incidents' }
   ],
 
+  // ─────────────────────────────────────────────────────────────
+  // CASES
+  // ─────────────────────────────────────────────────────────────
   cases: [
     { name: 'name', label: 'Case Name', type: 'text', required: true, placeholder: 'e.g. AG Civil Rights Complaint' },
     { name: 'case_number', label: 'Reference #', type: 'text', required: true, placeholder: 'e.g. 230019685' },
     { name: 'status', label: 'Legal Status', type: 'select', options: ['active', 'closed', 'under_review'] }
   ],
 
+  // ─────────────────────────────────────────────────────────────
+  // MEDIA
+  // ─────────────────────────────────────────────────────────────
   media: [
     { name: 'file_name', label: 'Asset Name', type: 'text', required: true },
     { name: 'file_type', label: 'MIME Type', type: 'text', placeholder: 'image/png, application/pdf' },
@@ -100,6 +146,9 @@ export const TABLE_SCHEMAS: Record<string, SchemaField[]> = {
     { name: 'is_redacted', label: 'Is Redacted?', type: 'select', options: ['0', '1'] }
   ],
 
+  // ─────────────────────────────────────────────────────────────
+  // POSTS
+  // ─────────────────────────────────────────────────────────────
   posts: [
     { name: 'title', label: 'Post Title', type: 'text', required: true },
     { name: 'slug', label: 'URL Slug', type: 'text', required: true },

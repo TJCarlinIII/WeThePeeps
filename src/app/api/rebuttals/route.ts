@@ -1,10 +1,24 @@
-export const dynamic = "force-dynamic";
-
+// src/app/api/rebuttals/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-interface Env {
-  DB: D1Database;
+interface Env { DB: D1Database; }
+
+export async function GET() {
+  try {
+    const { env } = await getCloudflareContext({ async: true });
+    const db = (env as unknown as Env).DB;
+    const { results } = await db.prepare(`
+      SELECT r.*, a.full_name as actor_name, i.title as incident_title 
+      FROM rebuttals r 
+      LEFT JOIN actors a ON r.actor_id = a.id 
+      LEFT JOIN incidents i ON r.incident_id = i.id
+      ORDER BY r.created_at DESC
+    `).all();
+    return NextResponse.json({ results: results || [] });
+  } catch (err) {
+    return NextResponse.json({ results: [] });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -12,55 +26,11 @@ export async function POST(request: NextRequest) {
   const db = (env as unknown as Env).DB;
 
   try {
-    const body = await request.json() as { 
-      actor_id: string; 
-      incident_id?: string; 
-      evidence_id?: string;
-      falsified_claim: string; 
-      clinical_fact: string;
-      evidence_url?: string;
-    };
-    
-    const { 
-      actor_id, 
-      incident_id, 
-      evidence_id, 
-      falsified_claim, 
-      clinical_fact, 
-      evidence_url 
-    } = body;
-
-    // We use a single INSERT. If your schema uses separate columns for 
-    // the lie and the truth, we map them here.
-    const query = `
-      INSERT INTO rebuttals (
-        actor_id, 
-        incident_id, 
-        evidence_id, 
-        falsified_claim, 
-        clinical_fact, 
-        evidence_url,
-        created_at
-      ) 
-      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `;
-    
-    await db.prepare(query)
-      .bind(
-        actor_id || null, 
-        incident_id || null, 
-        evidence_id || null, 
-        falsified_claim, 
-        clinical_fact, 
-        evidence_url || ''
-      )
-      .run();
-    
+    const body = await request.json() as any;
+    await db.prepare(`INSERT INTO rebuttals (actor_id, incident_id, evidence_id, falsified_claim, clinical_fact, evidence_url, created_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`)
+      .bind(body.actor_id || null, body.incident_id || null, body.evidence_id || null, body.falsified_claim, body.clinical_fact, body.evidence_url || '').run();
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("REBUTTAL_POST_ERROR:", err);
-    return NextResponse.json({ 
-      error: err instanceof Error ? err.message : 'Ledger commitment failed' 
-    }, { status: 500 });
+    return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }

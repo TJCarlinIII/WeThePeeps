@@ -1,28 +1,35 @@
+// src/app/admin/rebuttals/page.tsx
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import RebuttalForm from "@/components/admin/forms/RebuttalForm";
 import { IncidentTable } from "@/components/admin/incident-table";
 import AdminGuard from "@/components/admin/AdminGuard";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 
-export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 interface ActorResult { id: number; full_name: string; }
 interface IncidentResult { id: number; title: string; }
-interface EvidenceResult { id: number; title: string; } // Added for Evidence Linking
+interface EvidenceResult { id: number; file_path: string; } // ✅ Updated interface
+
 interface Env { DB: D1Database; }
 
 export default async function RebuttalsAdmin() {
-  const ctx = await getCloudflareContext();
+  const ctx = await getCloudflareContext({ async: true });
   const env = ctx.env as unknown as Env;
   const db = env.DB;
 
-  // Added media fetch to the parallel data load
+  console.log("REBUTTALS_PAGE: Starting render");
+
   const [actors, incidents, evidence] = await Promise.all([
     db.prepare("SELECT id, full_name FROM actors ORDER BY full_name ASC").all<ActorResult>(),
     db.prepare("SELECT id, title FROM incidents ORDER BY title ASC").all<IncidentResult>(),
-    db.prepare("SELECT id, title FROM media ORDER BY title ASC").all<EvidenceResult>(),
+    // ✅ FIX: Use file_path instead of file_name (verify with PRAGMA above)
+    db.prepare("SELECT id, file_path as title FROM media ORDER BY file_path ASC").all<EvidenceResult>(),
   ]);
+
+  console.log("REBUTTALS_PAGE: Actors loaded:", actors.results?.length);
+  console.log("REBUTTALS_PAGE: Incidents loaded:", incidents.results?.length);
+  console.log("REBUTTALS_PAGE: Evidence loaded:", evidence.results?.length);
 
   return (
     <AdminGuard>
@@ -54,7 +61,7 @@ export default async function RebuttalsAdmin() {
                 <RebuttalForm
                   actors={actors.results || []}
                   incidents={incidents.results || []}
-                  evidenceList={evidence.results || []} // Passing the master evidence list here
+                  evidenceList={evidence.results?.map(e => ({ id: e.id, title: (e as any).title })) || []} 
                 />
               </section>
 

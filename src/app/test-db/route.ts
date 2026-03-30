@@ -1,14 +1,18 @@
+// src/app/test-db/route.ts
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from 'next/server';
+// ✅ FIX 1: Import D1Database type from workers-types
+import type { D1Database } from "@cloudflare/workers-types";
 
 export async function GET() {
   try {
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
     const ctx = await getCloudflareContext({ async: true });
     
-    const env = ctx.env as Record<string, unknown>;
-    const db = env.DB as D1Database;
+    // ✅ FIX 2: Use double-cast pattern for type safety
+    const env = ctx.env as unknown as { DB: D1Database };
+    const db = env.DB;
 
     if (!db) {
       return NextResponse.json({ 

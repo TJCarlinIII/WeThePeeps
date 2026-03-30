@@ -1,3 +1,4 @@
+// src/context/AuthContext.tsx
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -5,7 +6,7 @@ import { authenticateAdmin } from '@/app/admin/actions';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  login: (password: string) => Promise<boolean>;
+  login: () => Promise<boolean>; // ✅ Removed password parameter
   logout: () => void;
   isLoading: boolean;
 }
@@ -29,10 +30,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const login = async (password: string) => {
+  // ✅ FIX: Removed password parameter since authenticateAdmin() doesn't accept one
+  const login = async () => {
     try {
       // Securely verifying against the D1/Worker env via Server Action
-      const res = await authenticateAdmin(password);
+      const res = await authenticateAdmin(); // ✅ No password argument
       if (res.success) {
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('wtp_admin_session', 'active');

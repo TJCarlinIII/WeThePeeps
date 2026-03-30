@@ -1,4 +1,3 @@
-// File: src/app/admin/page.tsx
 export const dynamic = "force-dynamic";
 
 import React from 'react';
@@ -10,8 +9,8 @@ import RevalidateButton from "@/components/admin/RevalidateButton";
 import { 
   ShieldAlert, Users, Building, Gavel, 
   FileText, FolderTree, LayoutGrid, RefreshCw, 
-  MessageSquareQuote, Wrench, Briefcase, HardDrive,
-  Eye
+  Database, Wrench, Briefcase, HardDrive, Eye,
+  MessageSquareQuote 
 } from "lucide-react";
 
 export default async function AdminPage() {
@@ -41,7 +40,7 @@ export default async function AdminPage() {
     { id: 'entities', label: 'Organizations', Icon: Building, path: '/admin/entities', count: stats?.entities },
     { id: 'actors', label: 'Individuals/Officials', Icon: Users, path: '/admin/actors', count: stats?.actors },
     { id: 'incidents', label: 'Timeline Events', Icon: ShieldAlert, path: '/admin/incidents', count: stats?.incidents },
-    { id: 'rebuttals', label: 'Rebuttal Registry', Icon: MessageSquareQuote, path: '/admin/rebuttals', count: stats?.rebuttals },
+    { id: 'rebuttals', label: 'Rebuttal Registry', Icon: MessageSquareQuote, path: '/admin/rebuttals', count: stats?.rebuttals }, 
     { id: 'cases', label: 'Legal/Police Cases', Icon: Briefcase, path: '/admin/cases', count: stats?.cases },
     { id: 'media', label: 'Evidence Vault', Icon: HardDrive, path: '/admin/media', count: stats?.media },
     { id: 'statutes', label: 'Legal Statutes', Icon: Gavel, path: '/admin/statutes', count: stats?.statutes },
@@ -103,7 +102,7 @@ export default async function AdminPage() {
               <div className="h-[1px] flex-grow bg-slate-900" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="group relative flex flex-col p-6 border border-slate-900 bg-slate-950/40 hover:bg-emerald-500/5 hover:border-emerald-500/50 transition-all duration-300 overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-0 bg-emerald-500 group-hover:h-full transition-all duration-300" />
                 <div className="flex justify-between items-start mb-6">
@@ -122,25 +121,24 @@ export default async function AdminPage() {
                 </div>
               </div>
 
-              {/* Global Rebuttal Ingress */}
               <Link 
-                href="/admin/rebuttals"
-                className="group relative flex flex-col p-6 border border-slate-900 bg-slate-950/40 hover:bg-[#4A90E2]/5 hover:border-[#4A90E2]/50 transition-all duration-300 overflow-hidden"
+                href="/admin/database"
+                className="group relative flex flex-col p-6 border border-slate-900 bg-slate-950/40 hover:bg-purple-500/5 hover:border-purple-500/50 transition-all duration-300 overflow-hidden"
               >
-                <div className="absolute top-0 left-0 w-1 h-0 bg-[#4A90E2] group-hover:h-full transition-all duration-300" />
+                <div className="absolute top-0 left-0 w-1 h-0 bg-purple-500 group-hover:h-full transition-all duration-300" />
                 <div className="flex justify-between items-start mb-6">
-                  <div className="text-[#4A90E2]/60 transition-all duration-300 group-hover:text-[#4A90E2]">
-                    <MessageSquareQuote size={24} strokeWidth={1.5} />
+                  <div className="text-purple-500/60 transition-all duration-300 group-hover:text-purple-500">
+                    <Database size={24} strokeWidth={1.5} />
                   </div>
                   <div className="text-right">
-                    <span className="text-[9px] font-black text-[#4A90E2] tracking-widest uppercase">Global_Ingress</span>
+                    <span className="text-[9px] font-black text-purple-500 tracking-widest uppercase">Raw_Data_Access</span>
                   </div>
                 </div>
                 <div className="mt-auto">
                   <h2 className="text-[11px] font-black group-hover:text-white text-slate-300 uppercase tracking-widest mb-1">
-                    Initialize_New_Rebuttal
+                    Database_Explorer
                   </h2>
-                  <p className="text-[8px] text-slate-600 uppercase font-bold tracking-tighter">Manual_Evidence_Cross_Link</p>
+                  <p className="text-[8px] text-slate-600 uppercase font-bold tracking-tighter">View Table Structures & Raw Rows</p>
                 </div>
               </Link>
             </div>

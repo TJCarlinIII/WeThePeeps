@@ -1,6 +1,4 @@
 // File: src/app/api/Statutes/route.ts
-export const runtime = "nodejs";
-
 import { NextRequest, NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
@@ -32,14 +30,18 @@ export async function GET() {
   const db = (ctx.env as unknown as Env).DB;
 
   try {
+    // We explicitly select the slug to ensure the frontend can build the [slug] URLs
     const { results } = await db.prepare("SELECT * FROM statutes ORDER BY citation ASC").all();
 
-    const { results: tax } = await db.prepare("SELECT parent_id, taxonomy_type, taxonomy_value FROM record_taxonomy WHERE parent_type = 'statute'").all<TaxRecord>();
+    const { results: tax } = await db.prepare(
+      "SELECT parent_id, taxonomy_type, taxonomy_value FROM record_taxonomy WHERE parent_type = 'statute'"
+    ).all<TaxRecord>();
 
     const mapped = results.map((r: Record<string, unknown>) => ({
       ...r,
-      categories: tax.filter((t) => t.parent_id === Number(r.id) && t.taxonomy_type === 'category').map((t) => t.taxonomy_value),
-      tags: tax.filter((t) => t.parent_id === Number(r.id) && t.taxonomy_type === 'tag').map((t) => t.taxonomy_value),
+      // Ensure categories/tags are handled even if the record is fresh
+      categories: tax.filter((t) => t.parent_id === r.id && t.taxonomy_type === 'category').map((t) => t.taxonomy_value),
+      tags: tax.filter((t) => t.parent_id === r.id && t.taxonomy_type === 'tag').map((t) => t.taxonomy_value),
     }));
 
     return NextResponse.json({ results: mapped });

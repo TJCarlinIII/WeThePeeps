@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { id: 'posts', label: 'POSTS', icon: '📝' },
   { id: 'actors', label: 'ACTORS', icon: '👤' },
   { id: 'statutes', label: 'STATUTES', icon: '⚖️' },
+  { id: 'database', label: 'DB EXPLORER', icon: '💽', customPath: '/admin/database' }, // ✅ ADDED DB EXPLORER
 ];
 
 export default function AdminSidebar() {
@@ -23,7 +24,7 @@ export default function AdminSidebar() {
   const { logout } = useAuth();
 
   return (
-    <aside className="w-64 border-r border-slate-900 bg-black flex flex-col min-h-screen">
+    <aside className="w-64 border-r border-slate-900 bg-black flex flex-col min-h-screen shrink-0">
       <div className="p-6 border-b border-slate-900">
         <h2 className="text-[#4A90E2] font-black tracking-tighter text-lg uppercase">
           WTP_CORE
@@ -33,7 +34,7 @@ export default function AdminSidebar() {
         </p>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
         <Link 
           href="/admin"
           className={`flex items-center gap-3 px-4 py-3 border transition-all text-[11px] font-bold ${
@@ -48,7 +49,6 @@ export default function AdminSidebar() {
         <div className="h-px bg-slate-900 my-4 mx-2" />
 
         {NAV_ITEMS.map((item) => {
-          // Logic to handle our clean /admin/taxonomy path vs the /admin/ paths
           const href = item.customPath ? item.customPath : `/admin/${item.id}`;
           const isActive = pathname === href;
 

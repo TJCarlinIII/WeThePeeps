@@ -3,7 +3,6 @@ var config = {
   default: {
     override: {
       wrapper: "cloudflare-node",
-      // Revert this to satisfy the validator
       converter: "edge",
       proxyExternalRequest: "fetch",
       incrementalCache: "dummy",

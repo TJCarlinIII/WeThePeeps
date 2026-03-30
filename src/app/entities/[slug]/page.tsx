@@ -1,5 +1,5 @@
+// src/app/entities/[slug]/page.tsx
 export const dynamic = "force-dynamic";
-
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { notFound } from "next/navigation";
 import Link from "next/link";

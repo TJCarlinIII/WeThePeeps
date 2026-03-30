@@ -1,8 +1,7 @@
-// File: open-next.config.ts
 const config = {
   default: {
     override: {
-      wrapper: "cloudflare-node", // Revert this to satisfy the validator
+      wrapper: "cloudflare-node",
       converter: "edge",
       proxyExternalRequest: "fetch",
       incrementalCache: "dummy",

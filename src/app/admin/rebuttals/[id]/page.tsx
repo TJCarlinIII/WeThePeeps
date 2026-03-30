@@ -2,8 +2,6 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
-export const runtime = "nodejs";
-
 interface Env {
   DB: D1Database;
 }

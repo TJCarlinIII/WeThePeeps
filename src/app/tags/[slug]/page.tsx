@@ -1,15 +1,37 @@
+// src/app/tags/[slug]/page.tsx
 import { notFound } from "next/navigation";
 import { getDB } from "@/lib/db";
 import { Metadata } from "next";
 
 interface TagPageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
+}
+
+interface Tag {
+  id: number;
+  name: string;
+  slug: string;
+  type: 'category' | 'tag';
+  seo_description?: string;
+  seo_keywords?: string;
+}
+
+interface RelatedActor {
+  id: number;
+  full_name: string;
+  slug: string;
 }
 
 // 1. Generate Metadata for SEO (Pulls your keywords from the DB)
 export async function generateMetadata({ params }: TagPageProps): Promise<Metadata> {
+  const { slug } = await params;
   const db = await getDB();
-  const tag = await db.get("SELECT name, seo_keywords FROM tags WHERE slug = ?", [params.slug]);
+  
+  // ✅ FIX: Use .prepare().bind().first() instead of .get()
+  const tag = await db
+    .prepare("SELECT name, seo_keywords FROM tags WHERE slug = ?")
+    .bind(decodeURIComponent(slug))
+    .first<Tag>();
 
   if (!tag) return { title: "Tag Not Found" };
 
@@ -22,22 +44,32 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
 
 // 2. The Main Page Component
 export default async function TagPage({ params }: TagPageProps) {
+  const { slug } = await params;
   const db = await getDB();
   
   // Fetch the specific tag details
-  const tag = await db.get("SELECT * FROM tags WHERE slug = ?", [params.slug]);
+  // ✅ FIX: Use .prepare().bind().first() instead of .get()
+  const tag = await db
+    .prepare("SELECT * FROM tags WHERE slug = ?")
+    .bind(decodeURIComponent(slug))
+    .first<Tag>();
 
   if (!tag) {
     notFound();
   }
 
-  // Fetch all Actors or Entities associated with this tag
-  // Adjust this query based on your join table (e.g., actor_tags or entity_tags)
-  const relatedActors = await db.all(`
-    SELECT a.* FROM actors a
-    JOIN actor_tags at ON a.id = at.actor_id
-    WHERE at.tag_id = ?
-  `, [tag.id]);
+  // Fetch all Actors associated with this tag
+  // ✅ FIX: Use .prepare().bind().all() instead of .all()
+  // ✅ FIX: Add explicit typing for the result
+  const { results: relatedActors } = await db
+    .prepare(`
+      SELECT a.id, a.full_name, a.slug 
+      FROM actors a
+      JOIN actor_tags at ON a.id = at.actor_id
+      WHERE at.tag_id = ?
+    `)
+    .bind(tag.id)
+    .all<RelatedActor>();
 
   return (
     <main className="min-h-screen bg-black text-white font-mono p-8">
@@ -53,8 +85,9 @@ export default async function TagPage({ params }: TagPageProps) {
         </h1>
 
         <div className="prose prose-invert max-w-none mb-10">
+          {/* ✅ REMOVED: tag.description reference (not in schema) */}
           <p className="text-slate-300 leading-relaxed italic">
-            {tag.description}
+            {tag.seo_description || "No description available for this tag."}
           </p>
         </div>
 
@@ -72,11 +105,11 @@ export default async function TagPage({ params }: TagPageProps) {
         {/* LIST RELATED CONTENT */}
         <section className="mt-12">
           <h2 className="text-sm font-black uppercase tracking-[0.3em] text-blue-500 mb-6 border-b border-slate-900 pb-2">
-            Associated_Entities_&_Actors
+            Associated_Actors ({relatedActors?.length || 0})
           </h2>
           <div className="grid gap-4">
-            {relatedActors.length > 0 ? (
-              relatedActors.map((actor) => (
+            {relatedActors && relatedActors.length > 0 ? (
+              relatedActors.map((actor: RelatedActor) => (
                 <a 
                   key={actor.id} 
                   href={`/actors/${actor.slug}`}
