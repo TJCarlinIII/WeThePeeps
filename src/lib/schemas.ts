@@ -28,11 +28,13 @@ export const TABLE_SCHEMAS: Record<string, SchemaField[]> = {
   ],
 
   // ─────────────────────────────────────────────────────────────
-  // ENTITIES (with Behavioral & Legal Protocol Flags)
+  // ENTITIES (with Behavioral, Legal Protocol & Closed-Loop Connectors)
   // ─────────────────────────────────────────────────────────────
   entities: [
     { name: 'name', label: 'Organization Name', type: 'text', required: true, placeholder: 'e.g. Redford Township' },
+    { name: 'formal_name', label: 'Legal Registered Name', type: 'text', placeholder: 'e.g. Redford Township Police Department' },
     { name: 'sector_id', label: 'Sector', type: 'relation', table: 'sectors', required: true },
+    { name: 'governing_law', label: 'Primary Governing Statute', type: 'relation', table: 'statutes' },
     { name: 'slug', label: 'URL Slug', type: 'text', required: true, placeholder: 'redford-township' },
     { name: 'parent_entity_id', label: 'Parent Organization', type: 'relation', table: 'entities' },
     { name: 'address', label: 'Street Address', type: 'text' },
@@ -47,17 +49,29 @@ export const TABLE_SCHEMAS: Record<string, SchemaField[]> = {
     { name: 'history_of_falsification', label: 'History of Falsification (Liar Clause)', type: 'boolean' },
     { name: 'history_of_withholding', label: 'History of Withholding (Haunting Clause)', type: 'boolean' },
     { name: 'statutory_delayer', label: 'Statutory Delayer (5-Day Warning)', type: 'boolean' },
+    
+    // ✅ NEW: Closed-Loop Network Map Logic
+    { name: 'is_private_entity', label: 'Private/Corporate?', type: 'boolean' },
+    { name: 'is_public_agency', label: 'Public/Government?', type: 'boolean' },
+
+    // ✅ NEW: Geographic Clustering for Regional Analysis
+    { 
+      name: 'geographic_cluster', 
+      label: 'Geographic Region', 
+      type: 'select', 
+      options: ['Metro Detroit', 'Lansing (State)', 'Grand Rapids (Hub)', 'Ann Arbor (Mobile)'] 
+    },
 
     { name: 'seo_description', label: 'SEO Description', type: 'textarea' },
     { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
   ],
 
   // ─────────────────────────────────────────────────────────────
-  // ACTORS
+  // ACTORS (with Conflict of Interest & Secondary Loyalty Tracking)
   // ─────────────────────────────────────────────────────────────
   actors: [
     { name: 'sector_id', label: 'Step 1: Filter by Sector', type: 'relation', table: 'sectors' },
-    { name: 'entity_id', label: 'Step 2: Affiliated Entity', type: 'relation', table: 'entities', dependsOn: 'sector_id', required: true },
+    { name: 'entity_id', label: 'Step 2: Primary Affiliated Entity', type: 'relation', table: 'entities', dependsOn: 'sector_id', required: true },
     { name: 'full_name', label: 'Full Name', type: 'text', required: true },
     { name: 'job_title', label: 'Official Title', type: 'text' },
     { name: 'status', label: 'Current Status', type: 'select', options: ['active', 'under_review', 'former'] },
@@ -66,6 +80,13 @@ export const TABLE_SCHEMAS: Record<string, SchemaField[]> = {
     { name: 'cdn_image_url', label: 'GitHub Evidence (AVIF) URL', type: 'text', placeholder: 'https://raw.githubusercontent.com/...' },
     { name: 'slug', label: 'URL Slug', type: 'text', required: true },
     { name: 'bio', label: 'Biography', type: 'textarea' },
+    
+    // ✅ NEW: Conflict of Interest / Closed-Loop Tracking
+    { name: 'secondary_entity_id', label: 'Secondary Affiliation (Conflict)', type: 'relation', table: 'entities' },
+    { name: 'is_board_member', label: 'Sits on Corporate Board?', type: 'boolean' },
+    { name: 'bar_number', label: 'Bar / License Number', type: 'text' },
+    { name: 'years_in_power', label: 'Years in Office/Role', type: 'number' },
+    
     { name: 'seo_description', label: 'SEO Description', type: 'textarea' },
     { name: 'seo_keywords', label: 'SEO Keywords', type: 'text' }
   ],
@@ -97,7 +118,7 @@ export const TABLE_SCHEMAS: Record<string, SchemaField[]> = {
   ],
 
   // ─────────────────────────────────────────────────────────────
-  // INCIDENTS
+  // INCIDENTS (with Audit Trail & Tyrannical Markers)
   // ─────────────────────────────────────────────────────────────
   incidents: [
     { name: 'title', label: 'Incident Heading', type: 'text', required: true },
@@ -111,17 +132,23 @@ export const TABLE_SCHEMAS: Record<string, SchemaField[]> = {
     { name: 'status', label: 'Current Status', type: 'select', options: ['pending', 'verified', 'archived'] },
     { name: 'is_critical', label: 'Flag Critical?', type: 'select', options: ['0', '1'] },
     
-    // ✅ NEW: Moral Violation Type (Natural Law Framework)
+    // ✅ NEW: Audit & Evidence Trail Fields
+    { name: 'report_number', label: 'Formal Case/Report #', type: 'text' },
+    { name: 'was_report_refused', label: 'Report Refused by Agency?', type: 'boolean' },
+    { name: 'has_audit_trail', label: 'Digital Audit Trail Secured?', type: 'boolean' },
+    
+    // ✅ EXPANDED: Moral Violation Type (Natural Law Framework + Tyrannical Markers)
     { 
       name: 'moral_violation_type', 
       label: 'Moral Violation Type', 
       type: 'select', 
       options: [
-        'not-kill',      // Thou Shalt Not Kill
-        'false-witness', // Thou Shalt Not Bear False Witness  
-        'not-steal',     // Thou Shalt Not Steal
-        'not-covet',     // Thou Shalt Not Covet
-        'honor-parents'  // Honor Thy Father and Mother
+        'not-kill',                // Thou Shalt Not Kill (Health/Survival)
+        'false-witness',           // Thou Shalt Not Bear False Witness (Falsification/Perjury)
+        'not-steal',               // Thou Shalt Not Steal (Financial/Income Denial)
+        'not-covet',               // Thou Shalt Not Covet (Conflict of Interest)
+        'honor-parents',           // Honor Thy Father and Mother (Abuse of Vulnerable/Elderly)
+        'denial-of-due-process'    // NEW: Tyrannical Governance Marker
       ] 
     },
     
@@ -130,15 +157,48 @@ export const TABLE_SCHEMAS: Record<string, SchemaField[]> = {
   ],
 
   // ─────────────────────────────────────────────────────────────
-  // REBUTTALS
+  // REBUTTALS (with Statute Mapping & Dispositive Evidence Flags)
   // ─────────────────────────────────────────────────────────────
   rebuttals: [
     { name: 'actor_id', label: 'Step 1: Select Individual', type: 'relation', table: 'actors', required: true },
     { name: 'falsified_claim', label: 'Falsified Claim (The "Lie")', type: 'textarea', required: true, placeholder: 'patient is neurologically intact' },
     { name: 'clinical_fact', label: 'Clinical Fact (The "Lab")', type: 'textarea', required: true, placeholder: 'U of M confirms Hearing Loss' },
-    { name: 'evidence_id', label: 'Master Evidence Document', type: 'relation', table: 'media' }, // ✅ Added so the UI can map it to media
+    { name: 'evidence_id', label: 'Master Evidence Document', type: 'relation', table: 'media' },
     { name: 'evidence_url', label: 'External Fallback URL', type: 'text' },
-    { name: 'incident_id', label: 'Associated Incident (Optional)', type: 'relation', table: 'incidents' }
+    { name: 'incident_id', label: 'Associated Incident (Optional)', type: 'relation', table: 'incidents' },
+    
+    // ✅ NEW: Statute Mapping & Dispositive Evidence
+    { name: 'statute_id', label: 'Statute Violated by Lie', type: 'relation', table: 'statutes' },
+    { name: 'is_dispositive', label: 'Dispositive Evidence? (Smoking Gun)', type: 'boolean' }
+  ],
+
+  // ─────────────────────────────────────────────────────────────
+  // LEGAL DEMANDS (NEW: Speed-Up Investigation Checklist)
+  // ─────────────────────────────────────────────────────────────
+  legal_demands: [
+    { name: 'title', label: 'Demand Title', type: 'text', required: true, placeholder: 'e.g. FOIA - April Sydow Emails' },
+    { name: 'entity_id', label: 'Target Entity', type: 'relation', table: 'entities', required: true },
+    { name: 'type', label: 'Demand Type', type: 'select', options: ['FOIA', 'HIPAA_ACCESS', 'EVIDENCE_PRESERVATION', '911_RECORDING'] },
+    { name: 'date_sent', label: 'Date Sent', type: 'date', required: true },
+    { name: 'deadline_date', label: 'Statutory Deadline', type: 'date' },
+    { name: 'status', label: 'Response Status', type: 'select', options: ['sent', 'acknowledged', 'fulfilled', 'stonewalled', 'appealed'] },
+    { name: 'tracking_number', label: 'Certified Mail / Tracking #', type: 'text' }
+  ],
+
+  // ─────────────────────────────────────────────────────────────
+  // CONNECTIONS (NEW: Network Graph Relationships)
+  // ─────────────────────────────────────────────────────────────
+  connections: [
+    { name: 'source_id', label: 'From (Actor or Entity)', type: 'relation', table: 'actors', required: true },
+    { name: 'target_id', label: 'To (Actor or Entity)', type: 'relation', table: 'entities', required: true },
+    { 
+      name: 'connection_type', 
+      label: 'Nature of Connection', 
+      type: 'select', 
+      options: ['employment', 'board_member', 'funding', 'legal_representation', 'contracted_vendor'] 
+    },
+    { name: 'description', label: 'Evidence/Context', type: 'textarea', placeholder: 'e.g. Sits on the board of both the hospital and the insurance firm.' },
+    { name: 'strength', label: 'Connection Weight', type: 'number', placeholder: '1 (Weak) to 3 (Smoking Gun)' }
   ],
 
   // ─────────────────────────────────────────────────────────────

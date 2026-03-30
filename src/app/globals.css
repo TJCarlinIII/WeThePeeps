@@ -55,17 +55,17 @@
 }
 
 :root {
-  /* Integrated IT Look: Dark Background */
-  --background: #000000;
+  /* Integrated IT Look: Deep Indigo/Navy Background */
+  --background: #050A18;
   --foreground: #f8fafc; /* slate-50 */
   
   /* Adjusted Component Colors for Dark Theme Consistency */
-  --card: #000000;
+  --card: #0B1021;
   --card-foreground: #f8fafc;
-  --popover: #000000;
+  --popover: #0B1021;
   --popover-foreground: #f8fafc;
   --primary: #f8fafc;
-  --primary-foreground: #000000;
+  --primary-foreground: #050A18;
   --secondary: #1e293b; /* slate-800 */
   --secondary-foreground: #f8fafc;
   --muted: #1e293b;
@@ -82,7 +82,7 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: #000000;
+  --sidebar: #0B1021;
   --sidebar-foreground: #f8fafc;
   --sidebar-primary: #4A90E2;
   --sidebar-primary-foreground: #ffffff;
@@ -94,14 +94,14 @@
 
 .dark {
   /* Maintaining the IT Look in Dark Mode */
-  --background: #000000;
+  --background: #050A18;
   --foreground: #f8fafc;
-  --card: #000000;
+  --card: #0B1021;
   --card-foreground: #f8fafc;
-  --popover: #000000;
+  --popover: #0B1021;
   --popover-foreground: #f8fafc;
   --primary: #f8fafc;
-  --primary-foreground: #000000;
+  --primary-foreground: #050A18;
   --secondary: #1e293b;
   --secondary-foreground: #f8fafc;
   --muted: #1e293b;
@@ -117,7 +117,7 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: #000000;
+  --sidebar: #0B1021;
   --sidebar-foreground: #f8fafc;
   --sidebar-primary: #4A90E2;
   --sidebar-primary-foreground: #ffffff;
@@ -132,29 +132,48 @@
     @apply border-border outline-ring/50;
   }
   body {
-    /* Integrated IT Look: Black BG, Slate-300 Text, Mono Font */
-    @apply bg-black text-slate-300;
-    font-family: var(--font-mono), monospace; 
+    /* Deep indigo/navy investigative background */
+    @apply bg-[#050A18] text-slate-300;
+    font-family: var(--font-mono), monospace;
   }
   html {
     @apply font-sans;
   }
   
-  /* Integrated Formal 'Statute' Look for Headings */
-  h1, h2, .font-serif-formal {
-    font-family: var(--font-libre), serif;
-    @apply text-foreground;
+  /* Integrated Formal 'Statute' Look for Headings & Narrative Text */
+  h1, h2, h3, p, .font-serif-formal {
+    font-family: var(--font-lora), serif;
   }
   
-  /* Keep standard heading font for h3-h6 unless specified */
-  h3, h4, h5, h6 {
+  /* Keep standard heading font for h4-h6 unless specified */
+  h4, h5, h6 {
     @apply font-heading text-foreground;
   }
 
-  /* Integrated Narrative Look for Paragraphs */
-  p, .font-narrative {
+  /* Integrated Narrative Look for specific class */
+  .font-narrative {
     font-family: var(--font-lora), serif;
     @apply text-foreground;
+  }
+}
+
+@layer utilities {
+  .investigative-grid {
+    background-size: 40px 40px;
+    background-image: 
+      linear-gradient(to right, rgba(30, 41, 59, 0.3) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(30, 41, 59, 0.3) 1px, transparent 1px);
+  }
+  
+  .glass-panel {
+    @apply bg-[#0B1021]/80 backdrop-blur-sm border border-slate-800/80;
+  }
+
+  .text-texture-blood {
+    @apply text-transparent bg-clip-text bg-cover bg-center;
+    background-image: url('/bloodywall.avif');
+    /* This shadow prevents the red from "bleeding" into the black background too much */
+    filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.9));
   }
 }
 
@@ -188,16 +207,25 @@
 
 /* Add this to your global CSS for the "Dark Newsprint" feel */
 body {
-  background-color: #121212;
-  background-image: url("https://www.transparenttextures.com/patterns/p6.png"); /* Subtle paper grain */
+  background-color: #050A18;
+  background-image: 
+    linear-gradient(to right, rgba(30, 41, 59, 0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(30, 41, 59, 0.15) 1px, transparent 1px),
+    url("https://www.transparenttextures.com/patterns/p6.png"); /* Subtle paper grain */
+  background-size: 40px 40px, 40px 40px, auto;
   color: #E4E4E4;
 }
 
-@layer utilities {
-  .text-texture-blood {
-    @apply text-transparent bg-clip-text bg-cover bg-center;
-    background-image: url('/bloodywall.avif');
-    /* This shadow prevents the red from "bleeding" into the black background too much */
-    filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.9));
-  }
+/* Marquee Animation */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: marquee 40s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
 }

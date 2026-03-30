@@ -137,6 +137,46 @@ export const slugify = (text: string): string => {
 
 
 *******************************************************************************
+* FILE: src/lib/database-types.ts
+*******************************************************************************
+export type SubjectStatus = 'pending' | 'stonewalled' | 'completed' | 'active' | 'under_review' | 'former';
+
+export interface OfficialDossier {
+  id: number;
+  uid: string;
+  full_name: string;
+  job_title: string;
+  agency_name: string;
+  agency_slug: string;
+  status: SubjectStatus;
+  incident_count: number;
+  statute_count: number;
+  slug: string;
+  history_of_falsification: number; // 0 or 1
+}
+
+export interface IntelligenceIncident {
+  id: number;
+  title: string;
+  event_date: string;
+  description: string;
+  entity_id: number;
+  entity_name: string;
+  entity_slug: string;
+  is_critical: number;
+  slug: string;
+  has_verified_evidence: number; // 0 or 1
+}
+
+export interface TopStatute {
+  id: number;
+  citation: string;
+  title: string;
+  violation_count: number;
+}
+
+
+*******************************************************************************
 * FILE: src/lib/utils.ts
 *******************************************************************************
 import { clsx, type ClassValue } from "clsx"
@@ -861,6 +901,116 @@ export default function IncidentsAdminPage() {
 
 
 *******************************************************************************
+* FILE: src/app/jurisdiction/[slug]/page.tsx
+*******************************************************************************
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { notFound } from "next/navigation";
+import DossierCard from "@/components/blocks/DossierCard";
+import IntelligenceFeed from "@/components/blocks/IntelligenceFeed";
+import { OfficialDossier, IntelligenceIncident } from "@/lib/database-types";
+
+// 1. Static Parameter Generation for SEO Indexing
+export async function generateStaticParams() {
+  try {
+    const ctx = await getCloudflareContext({ async: true });
+    const db = (ctx.env as unknown as { DB: D1Database }).DB;
+    const { results } = await db.prepare("SELECT slug FROM entities WHERE slug IS NOT NULL").all<{ slug: string }>();
+    return (results || []).map((row) => ({ slug: row.slug }));
+  } catch (e) {
+    console.warn("D1 generateStaticParams failed (expected during local dev if un-bound).");
+    return []; 
+  }
+}
+
+// 2. Department Hub Content
+export default async function DepartmentHubPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  
+  const ctx = await getCloudflareContext({ async: true });
+  const db = (ctx.env as unknown as { DB: D1Database }).DB;
+
+  // Fetch Entity Meta
+  const entity = await db.prepare("SELECT id, name, description, history_of_falsification FROM entities WHERE slug = ?").bind(slug).first<{ id: number, name: string, description: string, history_of_falsification: number }>();
+  if (!entity) notFound();
+
+  // Fetch Associated Data
+  const [dossiersData, incidentsData] = await Promise.all([
+    db.prepare(`
+      SELECT a.id, 'WTP-' || substr('00000' || a.id, -5, 5) as uid, a.full_name, a.job_title, a.status, a.slug,
+             ?2 as agency_name, ?1 as agency_slug, ?4 as history_of_falsification,
+             (SELECT COUNT(*) FROM incidents WHERE actor_id = a.id) as incident_count,
+             (SELECT COUNT(DISTINCT statute_id) FROM incidents WHERE actor_id = a.id) as statute_count
+      FROM actors a WHERE a.entity_id = ?3
+    `).bind(slug, entity.name, entity.id, entity.history_of_falsification).all<OfficialDossier>(),
+    
+    db.prepare(`
+      SELECT i.id, i.title, i.event_date, i.description, i.is_critical, i.slug,
+             ?2 as entity_name, ?1 as entity_slug, ?3 as entity_id,
+             CASE WHEN EXISTS (SELECT 1 FROM media m WHERE m.incident_id = i.id) THEN 1 ELSE 0 END as has_verified_evidence
+      FROM incidents i WHERE i.entity_id = ?3
+      ORDER BY i.event_date DESC LIMIT 16
+    `).bind(slug, entity.name, entity.id).all<IntelligenceIncident>()
+  ]);
+
+  const dossiers = dossiersData.results || [];
+  const incidents = incidentsData.results || [];
+
+  return (
+    <div className="min-h-screen bg-[#050A18] investigative-grid p-4 md:p-12">
+      <div className="max-w-[1400px] mx-auto">
+        {/* Header Block */}
+        <header className="border-b border-slate-800 pb-12 mb-12 relative">
+          
+          {entity.history_of_falsification === 1 && (
+            <div className="absolute top-0 right-0 border border-red-900 bg-red-950/30 text-red-500 font-mono text-[10px] px-3 py-1 font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.2)]">
+              ⚠️ Institutional Liar Clause Triggered
+            </div>
+          )}
+
+          <div className="inline-block px-3 py-1 bg-[#0B1021] border border-[#4A90E2]/30 font-mono text-[9px] text-[#4A90E2] uppercase tracking-widest mb-6">
+            Jurisdiction Profile Node
+          </div>
+          <h1 className="text-5xl md:text-7xl font-serif-formal text-white mb-6 uppercase tracking-tighter">
+            {entity.name}
+          </h1>
+          <p className="text-slate-400 font-sans max-w-3xl leading-relaxed text-lg border-l-2 border-[#D4AF37] pl-4">
+            {entity.description || "Active monitoring and evidence aggregation node for this jurisdiction."}
+          </p>
+        </header>
+
+        {/* Modular Stacking of Blocks */}
+        <div className="space-y-20">
+          {dossiers.length > 0 && (
+            <section>
+              <h2 className="text-[#D4AF37] font-mono text-[10px] font-black uppercase tracking-[0.3em] mb-6 border-b border-slate-800 pb-2 flex items-center gap-2">
+                <span className="text-[8px]">▶</span> Documented Personnel ({dossiers.length})
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {dossiers.map(d => <DossierCard key={d.id} dossier={d} />)}
+              </div>
+            </section>
+          )}
+
+          {incidents.length > 0 ? (
+            <section>
+              <h2 className="text-[#D4AF37] font-mono text-[10px] font-black uppercase tracking-[0.3em] mb-6 border-b border-slate-800 pb-2 flex items-center gap-2">
+                <span className="text-[8px]">▶</span> Jurisdiction Evidence Manifest
+              </h2>
+              <IntelligenceFeed incidents={incidents} />
+            </section>
+          ) : (
+            <div className="border border-dashed border-slate-800 p-20 text-center text-slate-500 font-mono text-xs uppercase tracking-widest">
+              No evidence documented under this jurisdiction node yet.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+*******************************************************************************
 * FILE: src/app/globals.css
 *******************************************************************************
 @tailwind base;
@@ -920,17 +1070,17 @@ export default function IncidentsAdminPage() {
 }
 
 :root {
-  /* Integrated IT Look: Dark Background */
-  --background: #000000;
+  /* Integrated IT Look: Deep Indigo/Navy Background */
+  --background: #050A18;
   --foreground: #f8fafc; /* slate-50 */
   
   /* Adjusted Component Colors for Dark Theme Consistency */
-  --card: #000000;
+  --card: #0B1021;
   --card-foreground: #f8fafc;
-  --popover: #000000;
+  --popover: #0B1021;
   --popover-foreground: #f8fafc;
   --primary: #f8fafc;
-  --primary-foreground: #000000;
+  --primary-foreground: #050A18;
   --secondary: #1e293b; /* slate-800 */
   --secondary-foreground: #f8fafc;
   --muted: #1e293b;
@@ -947,7 +1097,7 @@ export default function IncidentsAdminPage() {
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: #000000;
+  --sidebar: #0B1021;
   --sidebar-foreground: #f8fafc;
   --sidebar-primary: #4A90E2;
   --sidebar-primary-foreground: #ffffff;
@@ -959,14 +1109,14 @@ export default function IncidentsAdminPage() {
 
 .dark {
   /* Maintaining the IT Look in Dark Mode */
-  --background: #000000;
+  --background: #050A18;
   --foreground: #f8fafc;
-  --card: #000000;
+  --card: #0B1021;
   --card-foreground: #f8fafc;
-  --popover: #000000;
+  --popover: #0B1021;
   --popover-foreground: #f8fafc;
   --primary: #f8fafc;
-  --primary-foreground: #000000;
+  --primary-foreground: #050A18;
   --secondary: #1e293b;
   --secondary-foreground: #f8fafc;
   --muted: #1e293b;
@@ -982,7 +1132,7 @@ export default function IncidentsAdminPage() {
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: #000000;
+  --sidebar: #0B1021;
   --sidebar-foreground: #f8fafc;
   --sidebar-primary: #4A90E2;
   --sidebar-primary-foreground: #ffffff;
@@ -997,29 +1147,48 @@ export default function IncidentsAdminPage() {
     @apply border-border outline-ring/50;
   }
   body {
-    /* Integrated IT Look: Black BG, Slate-300 Text, Mono Font */
-    @apply bg-black text-slate-300;
-    font-family: var(--font-mono), monospace; 
+    /* Deep indigo/navy investigative background */
+    @apply bg-[#050A18] text-slate-300;
+    font-family: var(--font-mono), monospace;
   }
   html {
     @apply font-sans;
   }
   
-  /* Integrated Formal 'Statute' Look for Headings */
-  h1, h2, .font-serif-formal {
-    font-family: var(--font-libre), serif;
-    @apply text-foreground;
+  /* Integrated Formal 'Statute' Look for Headings & Narrative Text */
+  h1, h2, h3, p, .font-serif-formal {
+    font-family: var(--font-lora), serif;
   }
   
-  /* Keep standard heading font for h3-h6 unless specified */
-  h3, h4, h5, h6 {
+  /* Keep standard heading font for h4-h6 unless specified */
+  h4, h5, h6 {
     @apply font-heading text-foreground;
   }
 
-  /* Integrated Narrative Look for Paragraphs */
-  p, .font-narrative {
+  /* Integrated Narrative Look for specific class */
+  .font-narrative {
     font-family: var(--font-lora), serif;
     @apply text-foreground;
+  }
+}
+
+@layer utilities {
+  .investigative-grid {
+    background-size: 40px 40px;
+    background-image: 
+      linear-gradient(to right, rgba(30, 41, 59, 0.3) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(30, 41, 59, 0.3) 1px, transparent 1px);
+  }
+  
+  .glass-panel {
+    @apply bg-[#0B1021]/80 backdrop-blur-sm border border-slate-800/80;
+  }
+
+  .text-texture-blood {
+    @apply text-transparent bg-clip-text bg-cover bg-center;
+    background-image: url('/bloodywall.avif');
+    /* This shadow prevents the red from "bleeding" into the black background too much */
+    filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.9));
   }
 }
 
@@ -1053,18 +1222,27 @@ export default function IncidentsAdminPage() {
 
 /* Add this to your global CSS for the "Dark Newsprint" feel */
 body {
-  background-color: #121212;
-  background-image: url("https://www.transparenttextures.com/patterns/p6.png"); /* Subtle paper grain */
+  background-color: #050A18;
+  background-image: 
+    linear-gradient(to right, rgba(30, 41, 59, 0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(30, 41, 59, 0.15) 1px, transparent 1px),
+    url("https://www.transparenttextures.com/patterns/p6.png"); /* Subtle paper grain */
+  background-size: 40px 40px, 40px 40px, auto;
   color: #E4E4E4;
 }
 
-@layer utilities {
-  .text-texture-blood {
-    @apply text-transparent bg-clip-text bg-cover bg-center;
-    background-image: url('/bloodywall.avif');
-    /* This shadow prevents the red from "bleeding" into the black background too much */
-    filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.9));
-  }
+/* Marquee Animation */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: marquee 40s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
 }
 
 
@@ -5218,172 +5396,107 @@ export default async function EvidenceDetailPage({ params }: { params: Promise<{
 *******************************************************************************
 * FILE: src/app/page.tsx
 *******************************************************************************
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import MarqueeBanner from "@/components/blocks/MarqueeBanner";
+import HeroBlock from "@/components/blocks/HeroBlock";
+import DossierCard from "@/components/blocks/DossierCard";
+import StatuteTracker from "@/components/blocks/StatuteTracker";
+import MapAndFeed from "@/components/blocks/MapAndFeed";
+import { OfficialDossier, IntelligenceIncident, TopStatute } from "@/lib/database-types";
+import Link from "next/link";
+
 export const dynamic = "force-dynamic";
 
-import { ALL_KEYWORDS } from "@/lib/seo-keywords";
-import LogoMain from '@/components/ui/logo-main';
-import Link from 'next/link';
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+export default async function HomeHybridPage() {
+  let stats = { subjects: 0, open_inv: 0, stonewalled: 0, incidents: 0 };
+  let dossiers: OfficialDossier[] = [];
+  let incidents: IntelligenceIncident[] = [];
+  let topStatutes: TopStatute[] = [];
 
-// UI Components
-import ChapterArticle from '@/components/ui/chapter-article';
-import SidebarWidget from '@/components/ui/sidebar-widget'; 
-import AuthorBio from '@/components/ui/author-bio';
-import { NeglectCounter, SSAStatus } from '@/components/ui/status-widgets';
-
-interface EntityNode {
-  name: string;
-  slug: string;
-  sector: string;
-}
-
-export const metadata = {
-  title: "WeThePeeps | Whistleblower Evidence & Michigan True Crime Archive",
-  description: "Primary source database documenting medical neglect, systemic abuse of power, and government accountability failures in Redford Township and Michigan.",
-  keywords: ALL_KEYWORDS,
-};
-
-export default async function LandingPage() {
-  let randomEntities: EntityNode[] = [];
-  
   try {
-    const context = await getCloudflareContext({ async: true });
-    const env = (context.env as unknown) as { DB: D1Database };
-    
-    if (env?.DB) {
-      const { results } = await env.DB.prepare(
-        "SELECT name, slug, sector FROM entities ORDER BY RANDOM() LIMIT 9"
-      ).all();
-      randomEntities = (results as unknown as EntityNode[]) || [];
-    }
-  } catch (e) { 
-    console.error("Database Connection Failed:", e); 
+    const ctx = await getCloudflareContext({ async: true });
+    const db = (ctx.env as unknown as { DB: D1Database }).DB;
+
+    const [statsData, dossiersData, incidentsData, statutesData] = await Promise.all([
+      db.prepare(`
+        SELECT 
+          (SELECT COUNT(*) FROM actors) as subjects,
+          (SELECT COUNT(*) FROM actors WHERE status = 'under_review') as open_inv,
+          (SELECT COUNT(*) FROM actors WHERE status = 'former') as stonewalled,
+          (SELECT COUNT(*) FROM incidents) as incidents
+      `).first<typeof stats>(),
+      
+      db.prepare(`
+        SELECT a.id, 'WTP-' || substr('00000' || a.id, -5, 5) as uid, a.full_name, a.job_title, a.status, a.slug,
+               e.name as agency_name, e.slug as agency_slug, e.history_of_falsification,
+               (SELECT COUNT(*) FROM incidents WHERE actor_id = a.id) as incident_count,
+               (SELECT COUNT(DISTINCT statute_id) FROM incidents WHERE actor_id = a.id) as statute_count
+        FROM actors a LEFT JOIN entities e ON a.entity_id = e.id
+        ORDER BY incident_count DESC LIMIT 4
+      `).all<OfficialDossier>(),
+      
+      db.prepare(`
+        SELECT i.id, i.title, i.event_date, i.description, i.is_critical, i.slug,
+               e.id as entity_id, e.name as entity_name, e.slug as entity_slug,
+               CASE WHEN EXISTS (SELECT 1 FROM media m WHERE m.incident_id = i.id) THEN 1 ELSE 0 END as has_verified_evidence
+        FROM incidents i LEFT JOIN entities e ON i.entity_id = e.id
+        ORDER BY i.event_date DESC LIMIT 16
+      `).all<IntelligenceIncident>(),
+
+      db.prepare(`
+        SELECT s.id, s.citation, s.title, COUNT(i.id) as violation_count
+        FROM statutes s
+        JOIN incidents i ON s.id = i.statute_id
+        GROUP BY s.id
+        ORDER BY violation_count DESC LIMIT 5
+      `).all<TopStatute>()
+    ]);
+
+    if (statsData) stats = statsData;
+    dossiers = dossiersData.results || [];
+    incidents = incidentsData.results || [];
+    topStatutes = statutesData.results || [];
+
+  } catch (e) {
+    console.error("D1 Database Context Failure:", e);
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-slate-300 font-mono flex flex-col items-center p-4 md:p-8 lg:p-12 overflow-x-hidden relative">
-      
-      {/* Background Grid */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:clamp(40px,5vw,80px)_clamp(40px,5vw,80px)] pointer-events-none" />
+    <div className="min-h-screen bg-[#050A18] investigative-grid overflow-hidden">
+      <MarqueeBanner />
+      <HeroBlock stats={stats} />
 
-      <main className="relative z-10 w-full max-w-[90vw] lg:max-w-[1600px] flex flex-col mx-auto">
+      <main className="max-w-[1400px] mx-auto px-4 pb-32 space-y-20">
         
-        {/* MASTHEAD */}
-        <header className="flex flex-col items-center pt-4 text-center">
-          <Link href="/" className="hover:opacity-90 transition-opacity">
-            <LogoMain className="scale-90 md:scale-110 lg:scale-125 origin-center" />
-          </Link>
-          
-          <div className="w-full mt-10 space-y-1">
-            <div className="h-[2px] bg-red-900/40 w-full" />
-            <div className="flex flex-col md:flex-row justify-between items-center py-2 px-2 text-[10px] lg:text-[clamp(10px,0.8vw,14px)] uppercase tracking-[0.2em] text-slate-500 font-mono gap-2">
-               <span className="text-red-700 font-black">● 8th & 15th AMENDMENT VIOLATIONS ACTIVE</span>
-               <span className="hidden md:block text-slate-600">Detroit Metro Archive: Case #2022-11-22</span>
-               <span className="text-[#4A90E2] font-semibold">Baseline: IT MASTER (1997-2022)</span>
+        {/* ROW 1: ENTITY WATCH */}
+        <section>
+          <div className="flex justify-between items-end mb-6 border-b border-slate-800 pb-2">
+            <div>
+              <h2 className="text-[#D4AF37] font-mono text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2">
+                <span className="text-[8px]">▶</span> Entity Watch
+              </h2>
+              <p className="text-slate-400 font-serif-formal italic text-sm mt-1">Officials and subjects under active investigation</p>
             </div>
-            <div className="h-[1px] bg-red-900/20 w-full" />
+            <Link href="/accountability" className="text-slate-500 font-mono text-[9px] uppercase tracking-widest hover:text-[#4A90E2] flex items-center gap-1 transition-colors">
+              View All Registry →
+            </Link>
           </div>
-        </header>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {dossiers.map(d => <DossierCard key={d.id} dossier={d} />)}
+          </div>
+        </section>
 
-        {/* Separator */}
-        <div className="w-full mx-auto my-12 px-4">
-          <div className="h-px bg-gradient-to-r from-transparent via-red-900/50 to-transparent mb-1" />
-          <div className="h-[2px] bg-gradient-to-r from-transparent via-red-600/20 to-transparent" />
+        {/* ROW 2: MAP, FEED & STATUTE TRACKER */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-8 xl:col-span-9">
+            {/* This component handles both the Map logic and the Feed filtering */}
+            <MapAndFeed incidents={incidents} />
+          </div>
+          <div className="lg:col-span-4 xl:col-span-3">
+            <StatuteTracker statutes={topStatutes} />
+          </div>
         </div>
 
-        {/* MAIN GRID */}
-        <div className="grid grid-cols-12 gap-6 lg:gap-12">
-          
-          {/* LEFT: STORY ARCHIVE (MAIN CONTENT) */}
-          <div className="col-span-12 lg:col-span-7 xl:col-span-8 space-y-16 lg:space-y-24">
-            
-            <ChapterArticle 
-              label="Chapter I: The Medical Assault"
-              title="From IT Master to Clinical Collapse: The 20-Minute Window"
-              description="On Nov 22, 2022, a 25-year career in systems architecture was dismantled. Trace the immediate onset of 'Buzzing Teeth' and amnesia that Irvin Gastman re-labeled as 'Anger' to justify clinical abandonment."
-              borderColor="border-red-900"
-              labelColor="text-red-600"
-              isTextured={true}
-              linkHref="/stories/gastman-origin"
-              linkText="View Evidence Log"
-            />
-
-            <ChapterArticle 
-              label="Chapter II: Regulatory Perjury"
-              title="The Paper Wall: How LARA Aided a Cover-Up"
-              description="Gastman lied to the board about appointment history while life-critical records (Ischemia/Obstruction) were withheld for months. Explore the documentation that LARA ignored."
-              borderColor="border-slate-800"
-              labelColor="text-slate-500"
-              linkHref="/stories/lara-coverup"
-              linkText="Examine Correspondence"
-            />
-
-            <ChapterArticle 
-              label="Resource: Legal Sovereignty"
-              title="How to Execute a No-Cost FOIA Request"
-              description="Your right to know. Step-by-step template for requesting public records from Redford Township, MDHHS, and LARA — with legal citations and sample language."
-              borderColor="border-[#4A90E2]"
-              labelColor="text-[#4A90E2]"
-              linkHref="/resources/foia-template"
-              linkText="Download Template"
-            />
-
-            {/* AUTHOR BIO MOVED HERE: Bottom of main content, better for SEO and accessibility */}
-            <div className="pt-12 border-t border-slate-900/50">
-               <AuthorBio />
-            </div>
-
-          </div>
-
-          {/* RIGHT: SIDEBAR — CLEAN & URGENT */}
-          <aside className="col-span-12 lg:col-span-5 xl:col-span-4 space-y-8">
-            
-            {/* Massive visibility widgets first */}
-            <NeglectCounter />
-            
-            <SSAStatus />
-
-            <SidebarWidget 
-              title="Cognitive Baseline Analysis" 
-              variant="default"
-              label="Functional Alert"
-            >
-               <div className="space-y-6">
-                 <div>
-                   <span className="text-slate-500 text-sm uppercase block mb-2 tracking-wide">1997 - 2022 Capability</span>
-                   <p className="text-white font-bold text-lg uppercase">IT Master / Systems Infrastructure</p>
-                 </div>
-                 <div className="h-px bg-slate-800" />
-                 <div>
-                   <span className="text-red-600 text-sm uppercase block mb-2 tracking-wide">Post-Injury Status (Current)</span>
-                   <p className="text-slate-400 text-xs italic leading-relaxed">
-                    {' "6 weeks to complete standard Windows 11 installation." '}
-                   </p>
-                 </div>
-               </div>
-            </SidebarWidget>
-
-            <SidebarWidget title="⚡ Quick Action" variant="action">
-              <p className="text-slate-200 text-base leading-relaxed mb-4 font-semibold">
-                Need records now? Use our pre-filled FOIA generator.
-              </p>
-              <Link 
-                href="/tools/foia-generator" 
-                className="block w-full text-center bg-[#4A90E2] hover:bg-[#3a7fc2] text-black font-bold text-base uppercase py-4 transition-all"
-              >
-                Generate Request
-              </Link>
-            </SidebarWidget>
-
-          </aside>
-        </div>
-
-        {/* FOOTER */}
-        <footer className="mt-24 lg:mt-32 pt-8 border-t border-slate-900/50">
-           {/* ... Entity Grid remains as is ... */}
-        </footer>
-
-        {/* JSON-LD remains at bottom */}
       </main>
     </div>
   );
@@ -9017,6 +9130,509 @@ export default async function SectorPage({ params }: SectorPageProps) {
         </section>
       </div>
     </main>
+  );
+}
+
+
+*******************************************************************************
+* FILE: src/components/blocks/StatuteTracker.tsx
+*******************************************************************************
+import Link from "next/link";
+import { TopStatute } from "@/lib/database-types";
+
+export default function StatuteTracker({ statutes }: { statutes: TopStatute[] }) {
+  if (!statutes.length) return null;
+
+  return (
+    <aside className="border border-slate-800 bg-[#0B1021] p-6 h-fit sticky top-24">
+      <h3 className="text-[#D4AF37] font-mono text-[10px] font-black uppercase tracking-[0.3em] mb-6 flex items-center gap-2 border-b border-slate-800 pb-2">
+        <span className="w-1.5 h-1.5 bg-[#D4AF37] rounded-full" /> Top Violated Statutes
+      </h3>
+      
+      <div className="space-y-4">
+        {statutes.map((statute, i) => (
+          <div key={statute.id} className="group relative">
+            <div className="flex justify-between items-start mb-1">
+              <span className="font-mono text-[10px] text-[#4A90E2] font-bold group-hover:underline cursor-pointer tracking-widest">
+                {statute.citation}
+              </span>
+              <span className="font-mono text-[9px] text-red-500 bg-red-950/30 px-1.5 border border-red-900/30">
+                {statute.violation_count} Violations
+              </span>
+            </div>
+            <p className="font-serif-formal text-xs text-slate-300 leading-snug line-clamp-2">
+              {statute.title}
+            </p>
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+
+*******************************************************************************
+* FILE: src/components/blocks/HeroBlock.tsx
+*******************************************************************************
+"use client";
+
+import { Search, Shield } from "lucide-react";
+import React, { useState } from "react";
+
+interface HeroStats {
+  subjects: number;
+  open_inv: number;
+  stonewalled: number;
+  incidents: number;
+}
+
+export default function HeroBlock({ stats }: { stats: HeroStats }) {
+  const [query, setQuery] = useState("");
+
+  return (
+    <section className="flex flex-col items-center justify-center py-20 px-4 relative z-10 w-full max-w-4xl mx-auto">
+      <div className="flex items-center gap-4 mb-8">
+        <div className="h-[1px] w-12 bg-[#D4AF37]/50" />
+        <span className="text-[10px] font-mono text-[#D4AF37] uppercase tracking-[0.3em]">
+          Investigative Database of Record
+        </span>
+        <div className="h-[1px] w-12 bg-[#D4AF37]/50" />
+      </div>
+
+      <Shield className="w-12 h-12 text-[#4A90E2] mb-6" strokeWidth={1} />
+
+      <h1 className="text-5xl md:text-7xl font-serif-formal text-white mb-6 tracking-tight text-center">
+        WE THE <span className="text-[#D4AF37]">PEEPS</span>
+      </h1>
+
+      <p className="text-slate-400 font-serif-formal italic text-lg md:text-xl text-center max-w-2xl mb-12">
+        "A public ledger of institutional accountability — documenting misconduct, obstruction, and the officials who enable it."
+      </p>
+
+      <div className="text-[9px] font-mono text-slate-500 uppercase tracking-[0.2em] mb-8 space-x-4">
+        <span>Sourced from Public Records</span>
+        <span>•</span>
+        <span>FOIA Requests</span>
+        <span>•</span>
+        <span>Sworn Testimony</span>
+      </div>
+
+      {/* Global Search Bar */}
+      <div className="w-full relative group mb-12">
+        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+          <Search className="w-4 h-4 text-slate-500 group-focus-within:text-[#4A90E2] transition-colors" />
+        </div>
+        <input 
+          type="text"
+          placeholder="Search subjects, incidents, statutes..."
+          className="w-full bg-[#0B1021] border border-slate-800 py-4 pl-12 pr-12 text-sm text-white font-mono outline-none focus:border-[#4A90E2] transition-all"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+          <span className="border border-slate-700 px-1.5 py-0.5 text-[10px] text-slate-500 rounded-sm">⌘K</span>
+        </div>
+      </div>
+
+      {/* Quick Stats Row */}
+      <div className="grid grid-cols-4 w-full border border-slate-800 bg-[#0B1021]">
+        {[
+          { label: "Subjects", value: stats.subjects, color: "text-white" },
+          { label: "Open Inv.", value: stats.open_inv, color: "text-[#F59E0B]" },
+          { label: "Stonewalled", value: stats.stonewalled, color: "text-red-500" },
+          { label: "Incidents", value: stats.incidents, color: "text-[#4A90E2]" },
+        ].map((stat, i) => (
+          <div key={i} className={`flex flex-col items-center justify-center p-6 border-r border-slate-800 last:border-0`}>
+            <span className={`text-3xl font-black font-sans mb-1 ${stat.color}`}>{stat.value}</span>
+            <span className="text-[8px] font-mono text-slate-500 uppercase tracking-widest">{stat.label}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+
+*******************************************************************************
+* FILE: src/components/blocks/MarqueeBanner.tsx
+*******************************************************************************
+"use client";
+
+import React from "react";
+
+export default function MarqueeBanner() {
+  return (
+    <div className="w-full bg-[#DC2626] text-white overflow-hidden border-b border-red-900/50 py-1.5 relative z-50">
+      <div className="animate-marquee font-mono text-[9px] uppercase font-black tracking-widest flex items-center">
+        {/* Duplicate the content for seamless infinite scrolling */}
+        {[...Array(4)].map((_, i) => (
+          <span key={i} className="flex items-center px-4">
+            <span className="bg-white text-red-600 px-2 mr-3 py-0.5">CRITICAL_ALERT</span>
+            <span>2024-11-12 — Redford Township // Beauchamp: "FOIA Refusal - Year 3"</span>
+            <span className="text-red-300 mx-6">///</span>
+            <span className="bg-white text-red-600 px-2 mr-3 py-0.5">CRITICAL_ALERT</span>
+            <span>2024-08-22 — Michigan AG // Nessel: "Civil Rights Ignored"</span>
+            <span className="text-red-300 mx-6">///</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+*******************************************************************************
+* FILE: src/components/blocks/MapAndFeed.tsx
+*******************************************************************************
+"use client";
+
+import React, { useState, useMemo } from 'react';
+import IntelligenceFeed from './IntelligenceFeed';
+import { IntelligenceIncident } from '@/lib/database-types';
+
+interface MapAndFeedProps {
+  incidents: IntelligenceIncident[];
+}
+
+export default function MapAndFeed({ incidents }: MapAndFeedProps) {
+  const [selectedEntityId, setSelectedEntityId] = useState<number | null>(null);
+
+  // Extract unique entities from the incident list dynamically for the map
+  const uniqueEntities = useMemo(() => {
+    const map = new Map<number, { id: number, name: string, count: number }>();
+    incidents.forEach(inc => {
+      if (inc.entity_id) {
+        const existing = map.get(inc.entity_id);
+        map.set(inc.entity_id, {
+          id: inc.entity_id,
+          name: inc.entity_name,
+          count: (existing?.count || 0) + 1
+        });
+      }
+    });
+    return Array.from(map.values()).slice(0, 5); // Limit to top 5 for map aesthetics
+  }, [incidents]);
+
+  const filteredIncidents = selectedEntityId 
+    ? incidents.filter(i => i.entity_id === selectedEntityId)
+    : incidents;
+
+  return (
+    <div className="space-y-12">
+      {/* CLOSED LOOP MAP INTERACTIVE SVG */}
+      <section>
+        <div className="flex justify-between items-end mb-6 border-b border-slate-800 pb-2">
+          <div>
+            <h2 className="text-[#D4AF37] font-mono text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2">
+              <span className="text-[8px]">▶</span> Institutional Network Map
+            </h2>
+            <p className="text-slate-400 font-serif-formal italic text-sm mt-1">
+              Click a node to filter evidence by jurisdiction.
+            </p>
+          </div>
+          {selectedEntityId && (
+            <button 
+              onClick={() => setSelectedEntityId(null)}
+              className="text-[#4A90E2] font-mono text-[9px] uppercase tracking-widest border border-[#4A90E2]/30 px-3 py-1 hover:bg-[#4A90E2]/10 transition-colors"
+            >
+              Reset Filter
+            </button>
+          )}
+        </div>
+        
+        <div className="w-full aspect-[2/1] bg-[#0B1021] border border-slate-800 relative overflow-hidden flex items-center justify-center">
+          <svg width="100%" height="100%" viewBox="0 0 800 400" className="opacity-90">
+            {/* Background Grid */}
+            <path d="M0,200 L800,200 M400,0 L400,400" stroke="#1E293B" strokeWidth="1" strokeDasharray="4 4" />
+            
+            {/* Draw lines to center */}
+            {uniqueEntities.map((ent, idx) => {
+              // Mathematical layout: Center node is index 0. Others orbit.
+              if (idx === 0) return null;
+              const angle = (idx / (uniqueEntities.length - 1)) * Math.PI - Math.PI; // Arch over top
+              const r = 160;
+              const cx = 400 + r * Math.cos(angle);
+              const cy = 300 + r * Math.sin(angle);
+              return (
+                <path key={`line-${ent.id}`} d={`M${cx},${cy} L400,300`} stroke={selectedEntityId === ent.id ? "#D4AF37" : "#4A90E2"} strokeWidth="1" strokeDasharray="4 4" className="opacity-40 transition-colors duration-500" />
+              );
+            })}
+
+            {/* Draw Nodes */}
+            {uniqueEntities.map((ent, idx) => {
+              const isCenter = idx === 0;
+              let cx = 400, cy = 300;
+              
+              if (!isCenter) {
+                const angle = (idx / (uniqueEntities.length - 1)) * Math.PI - Math.PI;
+                const r = 160;
+                cx = 400 + r * Math.cos(angle);
+                cy = 300 + r * Math.sin(angle);
+              }
+
+              const isSelected = selectedEntityId === ent.id;
+              const isFaded = selectedEntityId !== null && !isSelected;
+
+              return (
+                <g 
+                  key={ent.id} 
+                  transform={`translate(${cx}, ${cy})`} 
+                  onClick={() => setSelectedEntityId(isSelected ? null : ent.id)}
+                  className={`cursor-pointer transition-all duration-500 hover:opacity-100 ${isFaded ? 'opacity-30' : 'opacity-100'}`}
+                >
+                  <circle r={isCenter ? "60" : "40"} fill={isSelected ? "#D4AF37" : "#4A90E2"} fillOpacity="0.05" stroke={isSelected ? "#D4AF37" : "#4A90E2"} strokeWidth="1" strokeDasharray="2 4" className="animate-[spin_20s_linear_infinite]" />
+                  <circle r={isCenter ? "30" : "20"} fill={isSelected ? "#D4AF37" : "#4A90E2"} fillOpacity={isSelected ? "0.2" : "0.1"} stroke={isSelected ? "#D4AF37" : "#4A90E2"} strokeWidth="1.5" />
+                  
+                  {/* FIX: Replaced invalid 'tracking' prop with style={{ letterSpacing }} */}
+                  <text y={isCenter ? "-5" : "3"} fill="white" fontSize="9" fontFamily="monospace" textAnchor="middle" style={{ letterSpacing: '0.1em' }}>
+                    {isCenter ? "HUB" : `N-${idx}`}
+                  </text>
+                  <text y={isCenter ? "50" : "40"} fill={isSelected ? "white" : "#94A3B8"} fontSize="11" fontFamily="serif" fontStyle="italic" textAnchor="middle">
+                    {ent.name.length > 20 ? ent.name.substring(0, 20) + '...' : ent.name}
+                  </text>
+                  
+                  {/* Alert Bubble */}
+                  <circle r="8" cx={isCenter ? "30" : "20"} cy={isCenter ? "-25" : "-15"} fill="#DC2626" />
+                  <text x={isCenter ? "30" : "20"} y={isCenter ? "-22" : "-12"} fill="white" fontSize="8" fontFamily="monospace" textAnchor="middle" fontWeight="bold">
+                    {ent.count}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      </section>
+
+      {/* FILTERED INTELLIGENCE FEED */}
+      <section>
+        <div className="flex justify-between items-end mb-6 border-b border-slate-800 pb-2">
+          <div>
+            <h2 className="text-[#D4AF37] font-mono text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2">
+              <span className="text-[8px]">▶</span> Intelligence Feed
+            </h2>
+            <p className="text-slate-400 font-serif-formal italic text-sm mt-1">
+              {selectedEntityId ? `Showing evidence isolated to selected jurisdiction.` : `Chronological manifest of all documented evidence.`}
+            </p>
+          </div>
+        </div>
+        <IntelligenceFeed incidents={filteredIncidents} />
+      </section>
+    </div>
+  );
+}
+
+
+*******************************************************************************
+* FILE: src/components/blocks/DossierCard.tsx
+*******************************************************************************
+import Link from "next/link";
+import { OfficialDossier } from "@/lib/database-types";
+
+// Helper for status badges
+const getStatusStyles = (status: string) => {
+  switch(status) {
+    case 'under_review': return 'text-[#F59E0B] bg-[#F59E0B]/10 border-[#F59E0B]/50';
+    case 'former': return 'text-red-500 bg-red-500/10 border-red-500/50';
+    case 'active': return 'text-white bg-slate-800 border-slate-600';
+    default: return 'text-[#4A90E2] bg-[#4A90E2]/10 border-[#4A90E2]/50';
+  }
+};
+
+export default function DossierCard({ dossier }: { dossier: OfficialDossier }) {
+  const statusStyles = getStatusStyles(dossier.status);
+
+  return (
+    <div className="border border-slate-800 bg-[#0B1021] flex flex-col p-5 relative group hover:border-[#4A90E2]/50 transition-colors h-full">
+      
+      {/* ⚠️ Warning Badge for Falsification History */}
+      {dossier.history_of_falsification === 1 && (
+         <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-red-950 border border-red-500 text-red-500 text-[8px] px-2 py-0.5 uppercase tracking-widest font-black whitespace-nowrap z-10 shadow-[0_0_10px_rgba(239,68,68,0.3)]">
+           ⚠️ Falsification History
+         </div>
+      )}
+
+      {/* Top Header Row */}
+      <div className="flex justify-between items-center mb-6">
+        <span className="font-mono text-[9px] text-slate-500 uppercase tracking-widest group-hover:text-[#4A90E2] transition-colors">
+          {dossier.uid}
+        </span>
+        <span className={`font-mono text-[8px] uppercase font-black px-2 py-0.5 border flex items-center gap-1.5 tracking-widest ${statusStyles}`}>
+          <span className={`w-1.5 h-1.5 rounded-full bg-current`} />
+          {dossier.status.replace('_', ' ')}
+        </span>
+      </div>
+
+      {/* Profile Section */}
+      <div className="flex gap-4 mb-6 flex-grow">
+        {/* WTP-ID Styled Silhouette */}
+        <div className="w-16 h-16 shrink-0 border border-slate-800 flex flex-col items-center justify-center bg-[#050A18] relative overflow-hidden group-hover:border-[#4A90E2]/30 transition-colors">
+          <div className="absolute inset-1 border border-slate-800/30" />
+          <span className="text-[6px] text-slate-700 font-mono tracking-tighter opacity-50 uppercase">Subject ID</span>
+          <span className="text-[10px] text-slate-600 font-mono font-black mt-1">WTP</span>
+          <span className="text-[8px] text-slate-600 font-mono font-black">{dossier.id.toString().padStart(3, '0')}</span>
+          
+          {/* Faux corner brackets */}
+          <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-slate-600" />
+          <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-slate-600" />
+        </div>
+
+        <div className="flex flex-col justify-center">
+          <h3 className="font-serif-formal text-xl font-bold text-white leading-tight mb-1">
+            {dossier.full_name}
+          </h3>
+          <p className="font-mono text-[9px] text-[#D4AF37] uppercase tracking-widest mb-2 leading-relaxed">
+            {dossier.job_title}
+          </p>
+          <Link href={`/jurisdiction/${dossier.agency_slug}`} className="font-mono text-[9px] text-slate-400 hover:text-[#4A90E2] transition-colors flex items-center gap-1">
+            ↳ {dossier.agency_name}
+          </Link>
+        </div>
+      </div>
+
+      {/* Stats Section */}
+      <div className="grid grid-cols-2 gap-4 border-t border-slate-800/50 pt-4 mt-auto">
+        <div className="text-center">
+          <div className="text-xl font-bold text-white font-mono">{dossier.incident_count}</div>
+          <div className="text-[8px] font-mono text-slate-600 uppercase tracking-widest">Incidents</div>
+        </div>
+        <div className="text-center">
+          <div className="text-xl font-bold text-white font-mono">{dossier.statute_count}</div>
+          <div className="text-[8px] font-mono text-slate-600 uppercase tracking-widest">Statutes</div>
+        </div>
+      </div>
+
+      <Link 
+        href={`/accountability/${dossier.slug}`}
+        className="mt-6 border-t border-slate-800/50 pt-4 text-center font-mono text-[9px] text-slate-500 uppercase tracking-widest group-hover:text-[#4A90E2] transition-colors flex justify-center items-center gap-2"
+      >
+        View Full Dossier ↗
+      </Link>
+    </div>
+  );
+}
+
+
+*******************************************************************************
+* FILE: src/components/blocks/IntelligenceFeed.tsx
+*******************************************************************************
+import Link from "next/link";
+import { IntelligenceIncident } from "@/lib/database-types";
+
+export default function IntelligenceFeed({ incidents }: { incidents: IntelligenceIncident[] }) {
+  if (incidents.length === 0) {
+    return (
+      <div className="border border-dashed border-slate-800 p-12 text-center text-slate-600 font-mono text-xs uppercase tracking-widest">
+        No incidents documented for this node.
+      </div>
+    );
+  }
+
+  return (
+    <div className="columns-1 md:columns-2 gap-4 space-y-4">
+      {incidents.map((incident) => (
+        <div 
+          key={incident.id} 
+          className="break-inside-avoid border border-slate-800 bg-[#0B1021] p-6 hover:bg-slate-900/50 transition-colors relative overflow-hidden group"
+        >
+          {/* Verified Evidence Watermark */}
+          {incident.has_verified_evidence === 1 && (
+            <div className="absolute -bottom-2 -right-4 opacity-5 pointer-events-none select-none group-hover:opacity-10 transition-opacity">
+              <span className="font-black text-6xl text-[#D4AF37] uppercase italic tracking-tighter">
+                VERIFIED
+              </span>
+            </div>
+          )}
+
+          <div className="relative z-10">
+            <div className="flex justify-between items-start mb-4">
+              <time className="font-mono text-[9px] text-slate-500 uppercase tracking-widest">
+                {new Date(incident.event_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+              </time>
+              
+              <div className="flex gap-2">
+                {incident.has_verified_evidence === 1 && (
+                  <span className="px-2 py-0.5 bg-[#D4AF37]/10 border border-[#D4AF37]/50 text-[#D4AF37] font-mono text-[8px] uppercase tracking-widest font-black">
+                    Evidence Attached
+                  </span>
+                )}
+                {incident.is_critical === 1 && (
+                  <span className="px-2 py-0.5 bg-red-950/50 border border-red-900/50 text-red-500 font-mono text-[8px] uppercase tracking-widest font-black">
+                    Critical
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            <h4 className="font-serif-formal text-xl text-white mb-3 group-hover:text-[#4A90E2] transition-colors leading-snug">
+              <Link href={`/evidence/${incident.slug}`}>{incident.title}</Link>
+            </h4>
+            
+            <p className="font-serif-formal text-sm text-slate-400 mb-6 leading-relaxed">
+              {incident.description}
+            </p>
+            
+            <div className="border-t border-slate-800/50 pt-4 flex justify-between items-center">
+              <span className="font-mono text-[9px] text-slate-600 uppercase tracking-widest">
+                Ref: WTP-INC-{incident.id.toString().padStart(4, '0')}
+              </span>
+              <Link href={`/jurisdiction/${incident.entity_slug}`} className="font-mono text-[9px] text-[#4A90E2] hover:underline uppercase tracking-widest">
+                ↳ {incident.entity_name}
+              </Link>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
+*******************************************************************************
+* FILE: src/components/blocks/ClosedLoopMap.tsx
+*******************************************************************************
+"use client";
+
+import React from 'react';
+
+// A stylistic SVG representation of an institutional network.
+export default function ClosedLoopMap() {
+  return (
+    <div className="w-full aspect-[2/1] bg-[#0B1021] border border-slate-800 relative overflow-hidden flex items-center justify-center p-8">
+      {/* Zoom controls */}
+      <div className="absolute top-4 right-4 flex gap-1 font-mono text-[10px] text-slate-500">
+        <button className="border border-slate-800 px-2 py-1 hover:bg-slate-800 hover:text-white">-</button>
+        <button className="border border-slate-800 px-3 py-1">100%</button>
+        <button className="border border-slate-800 px-2 py-1 hover:bg-slate-800 hover:text-white">+</button>
+      </div>
+
+      <svg width="100%" height="100%" viewBox="0 0 800 400" className="opacity-80">
+        {/* Background Grid Lines */}
+        <path d="M0,200 L800,200 M400,0 L400,400" stroke="#1E293B" strokeWidth="1" strokeDasharray="4 4" />
+        
+        {/* Connection Paths */}
+        <path d="M250,180 Q350,100 450,220 T650,150" fill="none" stroke="#4A90E2" strokeWidth="1.5" className="opacity-50" />
+        <path d="M250,180 L450,220" fill="none" stroke="#F59E0B" strokeWidth="1" strokeDasharray="5 5" className="opacity-40" />
+
+        {/* Node 1: Police Dept */}
+        <g transform="translate(250, 180)">
+          <circle r="40" fill="none" stroke="#4A90E2" strokeWidth="1" className="opacity-30" />
+          <circle r="4" fill="#4A90E2" />
+          <circle r="8" cx="20" cy="-20" fill="#DC2626" />
+          <text x="20" y="-17" fill="white" fontSize="8" fontFamily="monospace" textAnchor="middle" fontWeight="bold">11</text>
+        </g>
+
+        {/* Node 2: Township (Central) */}
+        <g transform="translate(450, 220)">
+          <circle r="60" fill="#4A90E2" fillOpacity="0.05" stroke="#4A90E2" strokeWidth="1" strokeDasharray="2 4" />
+          <circle r="30" fill="#4A90E2" fillOpacity="0.1" stroke="#4A90E2" strokeWidth="1" />
+          {/* FIX: Replaced invalid 'tracking' prop with style={{ letterSpacing }} */}
+          <text y="-5" fill="white" fontSize="9" fontFamily="monospace" textAnchor="middle" style={{ letterSpacing: '0.2em' }}>MUNI</text>
+          <text y="45" fill="#94A3B8" fontSize="12" fontFamily="serif" fontStyle="italic" textAnchor="middle">Redford Township</text>
+          <circle r="8" cx="30" cy="-25" fill="#DC2626" />
+          <text x="30" y="-22" fill="white" fontSize="8" fontFamily="monospace" textAnchor="middle" fontWeight="bold">23</text>
+        </g>
+      </svg>
+    </div>
   );
 }
 

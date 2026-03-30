@@ -1,169 +1,133 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import MarqueeBanner from "@/components/blocks/MarqueeBanner";
+import HeroBlock from "@/components/blocks/HeroBlock";
+import DossierCard from "@/components/blocks/DossierCard";
+import StatuteTracker from "@/components/blocks/StatuteTracker";
+import MapAndFeed from "@/components/blocks/MapAndFeed";
+import Link from "next/link";
+import { 
+  OfficialDossier, IntelligenceIncident, TopStatute, 
+  EntityNode, ActorNode, ActorEntityRelation 
+} from "@/lib/database-types";
+
 export const dynamic = "force-dynamic";
 
-import { ALL_KEYWORDS } from "@/lib/seo-keywords";
-import LogoMain from '@/components/ui/logo-main';
-import Link from 'next/link';
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+export default async function HomeHybridPage() {
+  let stats = { subjects: 0, open_inv: 0, stonewalled: 0, incidents: 0 };
+  let dossiers: OfficialDossier[] = [];
+  let mapEntities: EntityNode[] = [];
+  let mapActors: ActorNode[] = [];
+  let mapRelations: ActorEntityRelation[] = [];
+  let incidents: IntelligenceIncident[] = [];
+  let topStatutes: TopStatute[] = [];
 
-// UI Components
-import ChapterArticle from '@/components/ui/chapter-article';
-import SidebarWidget from '@/components/ui/sidebar-widget'; 
-import AuthorBio from '@/components/ui/author-bio';
-import { NeglectCounter, SSAStatus } from '@/components/ui/status-widgets';
-
-interface EntityNode {
-  name: string;
-  slug: string;
-  sector: string;
-}
-
-export const metadata = {
-  title: "WeThePeeps | Whistleblower Evidence & Michigan True Crime Archive",
-  description: "Primary source database documenting medical neglect, systemic abuse of power, and government accountability failures in Redford Township and Michigan.",
-  keywords: ALL_KEYWORDS,
-};
-
-export default async function LandingPage() {
-  let randomEntities: EntityNode[] = [];
-  
   try {
-    const context = await getCloudflareContext({ async: true });
-    const env = (context.env as unknown) as { DB: D1Database };
-    
-    if (env?.DB) {
-      const { results } = await env.DB.prepare(
-        "SELECT name, slug, sector FROM entities ORDER BY RANDOM() LIMIT 9"
-      ).all();
-      randomEntities = (results as unknown as EntityNode[]) || [];
+    const ctx = await getCloudflareContext({ async: true });
+    const db = (ctx.env as unknown as { DB: D1Database }).DB;
+
+    // Execute queries in parallel
+    const [statsData, dossiersData, entitiesData, relationsData, incidentsData, statutesData] = await Promise.all([
+      db.prepare(`
+        SELECT 
+          (SELECT COUNT(*) FROM actors) as subjects,
+          (SELECT COUNT(*) FROM actors WHERE status = 'under_review') as open_inv,
+          (SELECT COUNT(*) FROM actors WHERE status = 'former') as stonewalled,
+          (SELECT COUNT(*) FROM incidents) as incidents
+      `).first<typeof stats>(),
+      
+      db.prepare(`
+        SELECT a.id, 'WTP-' || substr('00000' || a.id, -5, 5) as uid, a.full_name, a.job_title, a.status, a.slug,
+               e.name as agency_name, e.slug as agency_slug, e.history_of_falsification,
+               (SELECT COUNT(*) FROM incidents WHERE actor_id = a.id) as incident_count,
+               (SELECT COUNT(DISTINCT statute_id) FROM incidents WHERE actor_id = a.id) as statute_count
+        FROM actors a LEFT JOIN entities e ON a.entity_id = e.id
+        ORDER BY incident_count DESC LIMIT 4
+      `).all<OfficialDossier>(),
+
+      // MAP: Only fetch entities that actually have documented crimes
+      db.prepare(`SELECT id, name, slug, has_documented_crimes, is_high_priority FROM entities WHERE has_documented_crimes = 1 LIMIT 8`).all<EntityNode>(),
+      
+      // MAP: Fetch junction table relations
+      db.prepare(`SELECT actor_id, entity_id, connection_type FROM actor_entity_relations`).all<ActorEntityRelation>(),
+      
+      db.prepare(`
+        SELECT i.id, i.title, i.event_date, i.description, i.is_critical, i.slug, i.moral_violation_type,
+               e.id as entity_id, e.name as entity_name, e.slug as entity_slug,
+               CASE WHEN EXISTS (SELECT 1 FROM media m WHERE m.incident_id = i.id) THEN 1 ELSE 0 END as has_verified_evidence
+        FROM incidents i LEFT JOIN entities e ON i.entity_id = e.id
+        ORDER BY i.event_date DESC LIMIT 16
+      `).all<IntelligenceIncident>(),
+
+      db.prepare(`
+        SELECT s.id, s.citation, s.title, COUNT(i.id) as violation_count
+        FROM statutes s JOIN incidents i ON s.id = i.statute_id
+        GROUP BY s.id ORDER BY violation_count DESC LIMIT 5
+      `).all<TopStatute>()
+    ]);
+
+    if (statsData) stats = statsData;
+    dossiers = dossiersData.results || [];
+    mapEntities = entitiesData.results || [];
+    mapRelations = relationsData.results || [];
+    incidents = incidentsData.results || [];
+    topStatutes = statutesData.results || [];
+
+    // MAP: Fetch only the actors connected to the filtered entities to prevent floating dots
+    if (mapEntities.length > 0) {
+      const entityIds = mapEntities.map(e => e.id).join(',');
+      const actorsQuery = await db.prepare(`
+        SELECT DISTINCT a.id, a.full_name, a.slug, a.status 
+        FROM actors a 
+        JOIN actor_entity_relations r ON a.id = r.actor_id 
+        WHERE r.entity_id IN (${entityIds})
+      `).all<ActorNode>();
+      mapActors = actorsQuery.results || [];
     }
-  } catch (e) { 
-    console.error("Database Connection Failed:", e); 
+
+  } catch (e) {
+    console.error("D1 Database Context Failure:", e);
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-slate-300 font-mono flex flex-col items-center p-4 md:p-8 lg:p-12 overflow-x-hidden relative">
-      
-      {/* Background Grid */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:clamp(40px,5vw,80px)_clamp(40px,5vw,80px)] pointer-events-none" />
+    <div className="min-h-screen bg-[#050A18] investigative-grid overflow-hidden pb-32">
+      <MarqueeBanner />
+      <HeroBlock stats={stats} />
 
-      <main className="relative z-10 w-full max-w-[90vw] lg:max-w-[1600px] flex flex-col mx-auto">
+      <main className="max-w-[1400px] mx-auto px-4 space-y-24 mt-12">
         
-        {/* MASTHEAD */}
-        <header className="flex flex-col items-center pt-4 text-center">
-          <Link href="/" className="hover:opacity-90 transition-opacity">
-            <LogoMain className="scale-90 md:scale-110 lg:scale-125 origin-center" />
-          </Link>
-          
-          <div className="w-full mt-10 space-y-1">
-            <div className="h-[2px] bg-red-900/40 w-full" />
-            <div className="flex flex-col md:flex-row justify-between items-center py-2 px-2 text-[10px] lg:text-[clamp(10px,0.8vw,14px)] uppercase tracking-[0.2em] text-slate-500 font-mono gap-2">
-               <span className="text-red-700 font-black">● 8th & 15th AMENDMENT VIOLATIONS ACTIVE</span>
-               <span className="hidden md:block text-slate-600">Detroit Metro Archive: Case #2022-11-22</span>
-               <span className="text-[#4A90E2] font-semibold">Baseline: IT MASTER (1997-2022)</span>
+        {/* ROW 1: ENTITY WATCH */}
+        <section>
+          <div className="flex justify-between items-end mb-6 border-b border-slate-800 pb-2">
+            <div>
+              <h2 className="text-[#D4AF37] font-mono text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2">
+                <span className="text-[8px]">▶</span> Entity Watch
+              </h2>
+              <p className="text-slate-400 font-serif-formal italic text-sm mt-1">Officials and subjects under active investigation</p>
             </div>
-            <div className="h-[1px] bg-red-900/20 w-full" />
+            <Link href="/accountability" className="text-slate-500 font-mono text-[9px] uppercase tracking-widest hover:text-[#4A90E2] flex items-center gap-1 transition-colors">
+              View All Registry →
+            </Link>
           </div>
-        </header>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {dossiers.map(d => <DossierCard key={d.id} dossier={d} />)}
+          </div>
+        </section>
 
-        {/* Separator */}
-        <div className="w-full mx-auto my-12 px-4">
-          <div className="h-px bg-gradient-to-r from-transparent via-red-900/50 to-transparent mb-1" />
-          <div className="h-[2px] bg-gradient-to-r from-transparent via-red-600/20 to-transparent" />
+        {/* ROW 2: MAP, FEED & STATUTE TRACKER */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+          <div className="lg:col-span-8 xl:col-span-9">
+            <MapAndFeed 
+              entities={mapEntities} 
+              actors={mapActors} 
+              relations={mapRelations} 
+              incidents={incidents} 
+            />
+          </div>
+          <div className="lg:col-span-4 xl:col-span-3">
+            <StatuteTracker statutes={topStatutes} />
+          </div>
         </div>
 
-        {/* MAIN GRID */}
-        <div className="grid grid-cols-12 gap-6 lg:gap-12">
-          
-          {/* LEFT: STORY ARCHIVE (MAIN CONTENT) */}
-          <div className="col-span-12 lg:col-span-7 xl:col-span-8 space-y-16 lg:space-y-24">
-            
-            <ChapterArticle 
-              label="Chapter I: The Medical Assault"
-              title="From IT Master to Clinical Collapse: The 20-Minute Window"
-              description="On Nov 22, 2022, a 25-year career in systems architecture was dismantled. Trace the immediate onset of 'Buzzing Teeth' and amnesia that Irvin Gastman re-labeled as 'Anger' to justify clinical abandonment."
-              borderColor="border-red-900"
-              labelColor="text-red-600"
-              isTextured={true}
-              linkHref="/stories/gastman-origin"
-              linkText="View Evidence Log"
-            />
-
-            <ChapterArticle 
-              label="Chapter II: Regulatory Perjury"
-              title="The Paper Wall: How LARA Aided a Cover-Up"
-              description="Gastman lied to the board about appointment history while life-critical records (Ischemia/Obstruction) were withheld for months. Explore the documentation that LARA ignored."
-              borderColor="border-slate-800"
-              labelColor="text-slate-500"
-              linkHref="/stories/lara-coverup"
-              linkText="Examine Correspondence"
-            />
-
-            <ChapterArticle 
-              label="Resource: Legal Sovereignty"
-              title="How to Execute a No-Cost FOIA Request"
-              description="Your right to know. Step-by-step template for requesting public records from Redford Township, MDHHS, and LARA — with legal citations and sample language."
-              borderColor="border-[#4A90E2]"
-              labelColor="text-[#4A90E2]"
-              linkHref="/resources/foia-template"
-              linkText="Download Template"
-            />
-
-            {/* AUTHOR BIO MOVED HERE: Bottom of main content, better for SEO and accessibility */}
-            <div className="pt-12 border-t border-slate-900/50">
-               <AuthorBio />
-            </div>
-
-          </div>
-
-          {/* RIGHT: SIDEBAR — CLEAN & URGENT */}
-          <aside className="col-span-12 lg:col-span-5 xl:col-span-4 space-y-8">
-            
-            {/* Massive visibility widgets first */}
-            <NeglectCounter />
-            
-            <SSAStatus />
-
-            <SidebarWidget 
-              title="Cognitive Baseline Analysis" 
-              variant="default"
-              label="Functional Alert"
-            >
-               <div className="space-y-6">
-                 <div>
-                   <span className="text-slate-500 text-sm uppercase block mb-2 tracking-wide">1997 - 2022 Capability</span>
-                   <p className="text-white font-bold text-lg uppercase">IT Master / Systems Infrastructure</p>
-                 </div>
-                 <div className="h-px bg-slate-800" />
-                 <div>
-                   <span className="text-red-600 text-sm uppercase block mb-2 tracking-wide">Post-Injury Status (Current)</span>
-                   <p className="text-slate-400 text-xs italic leading-relaxed">
-                    {' "6 weeks to complete standard Windows 11 installation." '}
-                   </p>
-                 </div>
-               </div>
-            </SidebarWidget>
-
-            <SidebarWidget title="⚡ Quick Action" variant="action">
-              <p className="text-slate-200 text-base leading-relaxed mb-4 font-semibold">
-                Need records now? Use our pre-filled FOIA generator.
-              </p>
-              <Link 
-                href="/tools/foia-generator" 
-                className="block w-full text-center bg-[#4A90E2] hover:bg-[#3a7fc2] text-black font-bold text-base uppercase py-4 transition-all"
-              >
-                Generate Request
-              </Link>
-            </SidebarWidget>
-
-          </aside>
-        </div>
-
-        {/* FOOTER */}
-        <footer className="mt-24 lg:mt-32 pt-8 border-t border-slate-900/50">
-           {/* ... Entity Grid remains as is ... */}
-        </footer>
-
-        {/* JSON-LD remains at bottom */}
       </main>
     </div>
   );
