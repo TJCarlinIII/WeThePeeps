@@ -15,10 +15,17 @@ binding = "ASSETS"
 binding = "WETHEPEEPS_ASSETS"
 id = "72d8125bd9b34ec58fc4493be3b096e7"
 
+# ── LEGACY DATABASE (Read-Only During Migration) ──
 [[d1_databases]]
 binding = "DB"
 database_name = "wethepeeps"
 database_id = "d2af6c35-b7a6-4244-aab9-075d63dfdae6"
+
+# ── NEW REFACTORED DATABASE v2 (Write-Enabled) ──
+[[d1_databases]]
+binding = "NEW_DB"                    # ← Must match getWtpDB() expectations exactly
+database_name = "wethepeeps-v2"
+database_id = "4f222eed-ec4c-4d79-9099-24c384474105"  # ← Your confirmed ID
 
 [[routes]]
 pattern = "wethepeeps.net"
@@ -32,3 +39,28 @@ custom_domain = true
 [observability.logs]
 enabled = true
 invocation_logs = true
+
+[[d1_databases]]
+binding = "DB_AUTH"
+database_name = "wtp_auth"
+database_id = "your-auth-db-id"
+
+[[d1_databases]]
+binding = "DB_CODEX"
+database_name = "wtp_codex"
+database_id = "your-codex-db-id"
+
+[[d1_databases]]
+binding = "DB_VAULT"
+database_name = "wtp_vault"
+database_id = "your-vault-db-id"
+
+[[d1_databases]]
+binding = "DB_RECORDS"
+database_name = "wtp_records"
+database_id = "your-records-db-id"
+
+[[d1_databases]]
+binding = "DB_CONTENT"
+database_name = "wtp_content"
+database_id = "your-content-db-id"

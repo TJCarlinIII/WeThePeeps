@@ -2,230 +2,115 @@
 @tailwind components;
 @tailwind utilities;
 
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  /* Map Lora as the body font */
-  --font-sans: var(--font-sans);
-  /* Map Libre Baskerville as the heading font */
-  --font-heading: var(--font-heading);
-  --font-mono: var(--font-mono);
-  /* Additional fonts for specific looks */
-  --font-libre: var(--font-libre);
-  --font-lora: var(--font-lora);
-  
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-}
-
-:root {
-  /* Integrated IT Look: Deep Indigo/Navy Background */
-  --background: #050A18;
-  --foreground: #f8fafc; /* slate-50 */
-  
-  /* Adjusted Component Colors for Dark Theme Consistency */
-  --card: #0B1021;
-  --card-foreground: #f8fafc;
-  --popover: #0B1021;
-  --popover-foreground: #f8fafc;
-  --primary: #f8fafc;
-  --primary-foreground: #050A18;
-  --secondary: #1e293b; /* slate-800 */
-  --secondary-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #cbd5e1; /* slate-300 */
-  --accent: #1e293b;
-  --accent-foreground: #f8fafc;
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: #1e293b;
-  --input: #1e293b;
-  --ring: #4A90E2; /* Integrated Blue */
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: #0B1021;
-  --sidebar-foreground: #f8fafc;
-  --sidebar-primary: #4A90E2;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e293b;
-  --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: #1e293b;
-  --sidebar-ring: #4A90E2;
-}
-
-.dark {
-  /* Maintaining the IT Look in Dark Mode */
-  --background: #050A18;
-  --foreground: #f8fafc;
-  --card: #0B1021;
-  --card-foreground: #f8fafc;
-  --popover: #0B1021;
-  --popover-foreground: #f8fafc;
-  --primary: #f8fafc;
-  --primary-foreground: #050A18;
-  --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #cbd5e1;
-  --accent: #1e293b;
-  --accent-foreground: #f8fafc;
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: #1e293b;
-  --input: #1e293b;
-  --ring: #4A90E2;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: #0B1021;
-  --sidebar-foreground: #f8fafc;
-  --sidebar-primary: #4A90E2;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e293b;
-  --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: #1e293b;
-  --sidebar-ring: #4A90E2;
-}
-
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+  :root {
+    --background: #050A18;
+    --foreground: #f8fafc;
+    --card: #0B1021;
+    --card-foreground: #f8fafc;
+    --popover: #0B1021;
+    --popover-foreground: #f8fafc;
+    --primary: #f8fafc;
+    --primary-foreground: #050A18;
+    --secondary: #1e293b;
+    --secondary-foreground: #f8fafc;
+    --muted: #1e293b;
+    --muted-foreground: #cbd5e1;
+    --accent: #1e293b;
+    --accent-foreground: #f8fafc;
+    --destructive: #ef4444;
+    --border: #1e293b;
+    --input: #1e293b;
+    --ring: #4A90E2;
+    --radius: 0.5rem;
   }
+
+  * {
+    @apply border-border;
+  }
+
+  html, body {
+    height: 100%;
+  }
+
   body {
-    /* Deep indigo/navy investigative background */
-    @apply bg-[#050A18] text-slate-300;
+    @apply bg-[#050A18] text-slate-300 antialiased;
+    background-attachment: fixed;
     font-family: var(--font-mono), monospace;
   }
-  html {
-    @apply font-sans;
-  }
-  
-  /* Integrated Formal 'Statute' Look for Headings & Narrative Text */
-  h1, h2, h3, p, .font-serif-formal {
-    font-family: var(--font-lora), serif;
-  }
-  
-  /* Keep standard heading font for h4-h6 unless specified */
-  h4, h5, h6 {
-    @apply font-heading text-foreground;
+
+  h1, h2, h3, .font-serif-formal {
+    font-family: var(--font-libre), serif;
   }
 
-  /* Integrated Narrative Look for specific class */
-  .font-narrative {
+  p, .font-narrative {
     font-family: var(--font-lora), serif;
-    @apply text-foreground;
+  }
+
+  code, .font-mono-data {
+    font-family: var(--font-mono), monospace;
   }
 }
 
 @layer utilities {
   .investigative-grid {
-    background-size: 40px 40px;
+    background-color: #050a18;
     background-image: 
-      linear-gradient(to right, rgba(30, 41, 59, 0.3) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(30, 41, 59, 0.3) 1px, transparent 1px);
+      /* Sub-grid (very faint) */
+      linear-gradient(to right, rgba(74, 144, 226, 0.12) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(74, 144, 226, 0.12) 1px, transparent 1px),
+      /* Main grid (more prominent) */
+      linear-gradient(to right, rgba(74, 144, 226, 0.13) 1px, transparent 1.5px),
+      linear-gradient(to bottom, rgba(74, 144, 226, 0.13) 1px, transparent 1.5px);
+    
+    /* This creates a "Major/Minor" line effect every 4 squares */
+    background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
   }
-  
-  .glass-panel {
-    @apply bg-[#0B1021]/80 backdrop-blur-sm border border-slate-800/80;
+
+  .grid-glow {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background: radial-gradient(
+      600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      rgba(74, 144, 226, 0.18),
+      transparent 80%
+    );
+    opacity: 1;
+    mix-blend-mode: screen;
+    will-change: background;
+    animation: glow-pulse 4s ease-in-out infinite;
   }
-
-  .text-texture-blood {
-    @apply text-transparent bg-clip-text bg-cover bg-center;
-    background-image: url('/bloodywall.avif');
-    /* This shadow prevents the red from "bleeding" into the black background too much */
-    filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.9));
-  }
 }
 
-/* Custom glow for your #4A90E2 blue */
-.blue-glow {
-  text-shadow: 0 0 10px rgba(74, 144, 226, 0.4);
+/* Animations */
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-/* Hide scrollbar for IE, Edge and Firefox */
-.no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
-
-/* Standard custom scrollbar for the sidebar (Subtle) */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #1e293b; /* Slate-800 */
-  border-radius: 10px;
-}
-
-/* Add this to your global CSS for the "Dark Newsprint" feel */
-body {
-  background-color: #050A18;
-  background-image: 
-    linear-gradient(to right, rgba(30, 41, 59, 0.15) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(30, 41, 59, 0.15) 1px, transparent 1px),
-    url("https://www.transparenttextures.com/patterns/p6.png"); /* Subtle paper grain */
-  background-size: 40px 40px, 40px 40px, auto;
-  color: #E4E4E4;
-}
-
-/* Marquee Animation */
 @keyframes marquee {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
+
 .animate-marquee {
   display: inline-flex;
-  white-space: nowrap;
-  animation: marquee 40s linear infinite;
+  animation: marquee 30s linear infinite;
+  will-change: transform;
 }
+
 .animate-marquee:hover {
   animation-play-state: paused;
+  cursor: pointer;
+}
+
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.animate-scan {
+  animation: scan 4s linear infinite;
 }

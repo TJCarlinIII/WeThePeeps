@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import Link from "next/link";
 import SidebarWidget from "@/components/SidebarWidget";
+import GlobalSearch from "@/components/GlobalSearch"; // ✅ NEW IMPORT
+import type { D1Database } from "@cloudflare/workers-types";
 
 interface Statute {
   id: number;
@@ -40,8 +42,8 @@ export default async function PublicCodex() {
   const [statutesRes, actorsRes, entitiesRes, recentEvidenceRes] = await Promise.all([
     env.DB.prepare("SELECT * FROM statutes ORDER BY citation ASC").all<Statute>(),
     env.DB.prepare("SELECT * FROM actors ORDER BY full_name ASC").all<Actor>(),
-    env.DB.prepare("SELECT * FROM entities ORDER BY name ASC").all<Entity>(),
-    env.DB.prepare("SELECT id, title, created_at, sector FROM evidence ORDER BY created_at DESC LIMIT 5").all<Evidence>()
+    env.DB.prepare("SELECT id, name, slug, description FROM entities ORDER BY name ASC").all<Entity>(),
+    env.DB.prepare("SELECT id, title, event_date as created_at, 'CIVIC' as sector FROM incidents ORDER BY event_date DESC LIMIT 5").all<Evidence>()
   ]);
 
   const statutes = statutesRes.results || [];
@@ -52,12 +54,19 @@ export default async function PublicCodex() {
   return (
     <main className="min-h-screen bg-black text-slate-300 font-mono p-6 md:p-12">
       <header className="max-w-6xl mx-auto mb-16 border-b border-slate-900 pb-10">
-        <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase mb-4">
-          Public_Codex_v1.0
-        </h1>
-        <p className="text-[#4A90E2] text-xs font-bold tracking-[0.4em] uppercase">
-          Open_Source_Civic_Intelligence_Database
-        </p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+          <div>
+            <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase mb-4 leading-none">
+              Public_Codex_v1.0
+            </h1>
+            <p className="text-[#4A90E2] text-[10px] font-bold tracking-[0.4em] uppercase">
+              Open_Source_Civic_Intelligence_Database
+            </p>
+          </div>
+          
+          {/* ✅ SEARCH INTEGRATION */}
+          <GlobalSearch />
+        </div>
       </header>
 
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-12">

@@ -10,7 +10,7 @@ import {
   ShieldAlert, Users, Building, Gavel, 
   FileText, FolderTree, LayoutGrid, RefreshCw, 
   Database, Wrench, Briefcase, HardDrive, Eye,
-  MessageSquareQuote 
+  MessageSquareQuote, Zap // ✅ NEW: Lightning icon for v2 modules
 } from "lucide-react";
 
 export default async function AdminPage() {
@@ -39,7 +39,27 @@ export default async function AdminPage() {
     { id: 'taxonomy', label: 'Taxonomy Architect', Icon: FolderTree, path: '/admin/taxonomy', count: stats?.taxonomy },
     { id: 'entities', label: 'Organizations', Icon: Building, path: '/admin/entities', count: stats?.entities },
     { id: 'actors', label: 'Individuals/Officials', Icon: Users, path: '/admin/actors', count: stats?.actors },
-    { id: 'incidents', label: 'Timeline Events', Icon: ShieldAlert, path: '/admin/incidents', count: stats?.incidents },
+    
+    // ── LEGACY INCIDENTS (Read-Only During Migration) ──
+    { 
+      id: 'incidents', 
+      label: 'Timeline Events [Legacy]', 
+      Icon: ShieldAlert, 
+      path: '/admin/incidents', 
+      count: stats?.incidents,
+      isLegacy: true // ✅ Flag for visual styling
+    },
+    
+    // ── NEW REFACTORED INCIDENTS v2 (Write-Enabled) ──
+    { 
+      id: 'incidents-v2', 
+      label: 'Timeline Events v2', 
+      Icon: Zap, // ✅ Lightning icon for new architecture
+      path: '/admin/modules/incidents', 
+      count: null, // Count would require separate query to wethepeeps-v2
+      isNew: true // ✅ Flag for visual styling
+    },
+    
     { id: 'rebuttals', label: 'Rebuttal Registry', Icon: MessageSquareQuote, path: '/admin/rebuttals', count: stats?.rebuttals }, 
     { id: 'cases', label: 'Legal/Police Cases', Icon: Briefcase, path: '/admin/cases', count: stats?.cases },
     { id: 'media', label: 'Evidence Vault', Icon: HardDrive, path: '/admin/media', count: stats?.media },
@@ -54,7 +74,7 @@ export default async function AdminPage() {
         <AdminSidebar />
         
         <main className="flex-1 p-8 overflow-y-auto">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             
             <header className="mb-10 border-b border-slate-900 pb-6">
               <h1 className="text-2xl font-bold tracking-tighter text-[#4A90E2] uppercase italic">
@@ -66,31 +86,65 @@ export default async function AdminPage() {
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {DATA_TABLES.map((table) => (
-                <Link
-                  key={table.id}
-                  href={table.path}
-                  className="group relative flex flex-col p-6 border border-slate-900 bg-slate-950/40 hover:bg-[#4A90E2]/5 hover:border-[#4A90E2]/50 transition-all duration-300 overflow-hidden"
-                >
-                  <div className="absolute top-0 left-0 w-1 h-0 bg-[#4A90E2] group-hover:h-full transition-all duration-300" />
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="text-[#4A90E2]/60 transition-all duration-300 group-hover:text-[#4A90E2] group-hover:scale-110">
-                      <table.Icon size={24} strokeWidth={1.5} />
-                    </div>
-                    <div className="text-right">
-                      <span className="text-2xl font-black text-white tracking-tighter">
-                        {table.count ?? 0}
+              {DATA_TABLES.map((table) => {
+                const isLegacy = (table as any).isLegacy;
+                const isNew = (table as any).isNew;
+                
+                return (
+                  <Link
+                    key={table.id}
+                    href={table.path}
+                    className={`group relative flex flex-col p-6 border transition-all duration-300 overflow-hidden ${
+                      isNew 
+                        ? 'border-emerald-500/50 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-400' 
+                        : isLegacy
+                          ? 'border-slate-900 bg-slate-950/40 hover:border-[#4A90E2]/50 hover:bg-[#4A90E2]/5'
+                          : 'border-slate-900 bg-slate-950/40 hover:border-[#4A90E2]/50 hover:bg-[#4A90E2]/5'
+                    }`}
+                  >
+                    {/* Version badge */}
+                    {isNew && (
+                      <span className="absolute top-2 right-2 text-[8px] font-black text-emerald-500 uppercase tracking-widest border border-emerald-500/30 px-1.5 py-0.5">
+                        NEW
                       </span>
-                      <p className="text-[7px] text-slate-600 uppercase font-bold tracking-widest">Records</p>
+                    )}
+                    {isLegacy && (
+                      <span className="absolute top-2 right-2 text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-700/30 px-1.5 py-0.5">
+                        LEGACY
+                      </span>
+                    )}
+                    
+                    <div className="absolute top-0 left-0 w-1 h-0 bg-current group-hover:h-full transition-all duration-300" />
+                    
+                    <div className="flex justify-between items-start mb-6">
+                      <div className={`transition-all duration-300 group-hover:scale-110 ${
+                        isNew ? 'text-emerald-500/60 group-hover:text-emerald-400' : 'text-[#4A90E2]/60 group-hover:text-[#4A90E2]'
+                      }`}>
+                        <table.Icon size={24} strokeWidth={1.5} />
+                      </div>
+                      <div className="text-right">
+                        <span className="text-2xl font-black text-white tracking-tighter">
+                          {table.count ?? (isNew ? '∞' : 0)}
+                        </span>
+                        <p className="text-[7px] text-slate-600 uppercase font-bold tracking-widest">Records</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-auto">
-                    <h2 className="text-[10px] font-black group-hover:text-white text-slate-400 uppercase tracking-widest transition-colors">
-                      {table.label}
-                    </h2>
-                  </div>
-                </Link>
-              ))}
+                    
+                    <div className="mt-auto">
+                      <h2 className={`text-[10px] font-black uppercase tracking-widest transition-colors ${
+                        isNew ? 'text-emerald-400 group-hover:text-emerald-300' : 'text-slate-400 group-hover:text-white'
+                      }`}>
+                        {table.label}
+                      </h2>
+                      {isNew && (
+                        <p className="text-[8px] text-emerald-600/70 mt-1 uppercase tracking-tight">
+                          Join-Table Architecture
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
 
             <div className="mt-16 mb-8 flex items-center gap-4">
@@ -141,6 +195,18 @@ export default async function AdminPage() {
                   <p className="text-[8px] text-slate-600 uppercase font-bold tracking-tighter">View Table Structures & Raw Rows</p>
                 </div>
               </Link>
+            </div>
+
+            {/* Migration Notice */}
+            <div className="mt-12 p-4 border border-emerald-900/30 bg-emerald-950/10 rounded">
+              <p className="text-[10px] text-emerald-400 uppercase tracking-widest font-bold mb-2">
+                Migration Notice
+              </p>
+              <p className="text-[9px] text-emerald-600/80 leading-relaxed">
+                The <span className="text-emerald-300 font-bold">Timeline Events v2</span> module uses the new join-table architecture. 
+                Legacy incidents remain accessible via <span className="text-slate-400">Timeline Events [Legacy]</span>. 
+                New incidents should be created in v2.
+              </p>
             </div>
 
             <footer className="mt-16 pt-6 border-t border-slate-900/50 flex justify-between items-center">

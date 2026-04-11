@@ -1,0 +1,1 @@
+This folder contains the built output assets for the worker "wethepeeps-site" generated at 2026-04-03T02:04:13.651Z.

@@ -27,9 +27,11 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await login(password);
+    
+    // ✅ FIXED: login() takes 0 arguments - auth is server-side
+    const success = await login(); 
+    
     if (success) {
-      // REDIRECT FIX #2: On successful login, go to Taxonomy
       router.push('/admin/taxonomy');
     } else {
       setError(true);
@@ -64,6 +66,8 @@ export default function LoginPage() {
               className={`w-full bg-black border-2 ${error ? 'border-red-600' : 'border-slate-700'} p-6 text-2xl text-[#4A90E2] outline-none focus:border-[#4A90E2] transition-all rounded-md`}
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(false); }}
+              // ✅ Optional: If you want to keep the field for UX but not use it:
+              // onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)}
             />
             {error && <p className="text-red-600 text-sm mt-4 font-black uppercase tracking-widest animate-bounce">Access_Denied_Invalid_Key</p>}
           </div>

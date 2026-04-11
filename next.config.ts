@@ -1,4 +1,10 @@
-/** @type {import('next').NextConfig} */
+// next.config.ts
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+
+// ✅ Initialize Cloudflare context for local development ONLY
+// This does NOT run in production - safe to add
+initOpenNextCloudflareForDev();
+
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -8,12 +14,15 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
-    // Optional: If you plan to use R2 for images later, 
-    // you'll add your R2 public bucket URL here.
     unoptimized: true, 
   },
-  // This ensures that the build doesn't fail due to 
-  // minor linting warnings in the "Dossier" scripts.
+  // Fix for SQLITE_BUSY: Force sequential page generation
+  experimental: {
+    cpus: 1,
+    workerThreads: false,
+  },
+  // Increase timeout for the larger production dataset
+  staticPageGenerationTimeout: 300,
   eslint: {
     ignoreDuringBuilds: true,
   },

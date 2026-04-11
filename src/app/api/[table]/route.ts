@@ -1,3 +1,4 @@
+// FILE: src/app/api/[table]/route.ts
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -11,9 +12,12 @@ type RouteContext = {
   params: Promise<{ table: string }>;
 };
 
-const ALLOWED_TABLES = ['sectors', 'entities', 'actors', 'incidents', 'media', 'statutes', 'content', 'posts'];
+// ✅ FIX: 'connections' added to allowed tables so the admin panel can fetch and edit relations
+const ALLOWED_TABLES = [
+  'sectors', 'entities', 'actors', 'incidents', 
+  'media', 'statutes', 'content', 'posts', 'connections', 'rebuttals', 'cases'
+];
 
-// UI-only fields that shouldn't be sent to the DB
 const FORBIDDEN_COLUMNS = ['sector_name', 'entity_name', 'actor_name', 'statute_title'];
 
 function isTableAllowed(table: string): boolean {
@@ -50,7 +54,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const db = (env as unknown as Env).DB;
 
   try {
-    const { results } = await db.prepare(`SELECT * FROM \`${table}\` ORDER BY id DESC`).all();
+    let query = `SELECT * FROM \`${table}\` ORDER BY id DESC`;
+    // 'connections' table has an id, so standard order by works fine here too.
+    const { results } = await db.prepare(query).all();
     return NextResponse.json({ results: results || [] });
   } catch (err) {
     console.error(`GET_ERROR [${table}]:`, err);
@@ -74,7 +80,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
     
     if (keys.length === 0) return NextResponse.json({ error: 'No data' }, { status: 400 });
 
-    // Use backticks for table and keys to prevent SQL errors
     const keyString = `\`${keys.join('\`, \`')}\``;
     const placeholders = keys.map(() => '?').join(', ');
 
